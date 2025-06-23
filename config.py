@@ -50,8 +50,8 @@ class DetectionConfig:
     
     # Markov blanket validation parameters
     VALIDATE_BLANKETS = True  # Can be enabled for strict validation
-    BLANKET_TOLERANCE = 5.0  # Increased for discrete data with k-NN estimation
-    CMI_K_NEIGHBORS = 3
+    BLANKET_TOLERANCE = 1.0  # Adjusted for discrete CMI estimation (was 5.0 for broken k-NN)
+    CMI_SMOOTHING_ALPHA = 0.1  # Laplace smoothing parameter for discrete CMI
 
 
 # Default configurations for backward compatibility

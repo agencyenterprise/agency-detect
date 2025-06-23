@@ -7,73 +7,88 @@ validating that discovered clusters satisfy the Markov blanket property.
 
 import numpy as np
 import warnings
-from sklearn.neighbors import NearestNeighbors
+from collections import Counter
+from math import log
 from sklearn.metrics import mutual_info_score
 from config import DetectionConfig
 
 
-def conditional_mutual_info_knn(X, Y, Z, k=None):
+def conditional_mutual_info_discrete(X, Y, Z, alpha=None):
     """
-    Estimate conditional mutual information I(X;Y|Z) using k-NN method.
+    Estimate conditional mutual information I(X;Y|Z) using smoothed plug-in estimator.
     
-    Based on: Frenzel & Pompe (2007) "Partial Mutual Information for Coupling Analysis"
-    I(X;Y|Z) = H(X|Z) + H(Y|Z) - H(X,Y|Z)
+    This is the discrete-appropriate method that replaces the broken k-NN estimator.
+    Uses Laplace smoothing to handle zero counts robustly.
     
     Args:
-        X, Y, Z: Input arrays (must have same length)
-        k: Number of nearest neighbors (default from config)
+        X, Y, Z: Input arrays (must have same length, should be discrete/integer)
+        alpha: Smoothing parameter (default from config)
         
     Returns:
-        Conditional mutual information estimate
+        Conditional mutual information estimate in nats
     """
-    if k is None:
-        k = DetectionConfig.CMI_K_NEIGHBORS
+    if alpha is None:
+        alpha = getattr(DetectionConfig, 'CMI_SMOOTHING_ALPHA', 0.1)
         
     if len(X) != len(Y) or len(X) != len(Z):
         raise ValueError("All input arrays must have same length")
     
     n = len(X)
-    if n < k + 1:
+    if n < 10:  # Need minimum samples for discrete estimation
         return 0.0
     
-    # Ensure arrays are 2D
-    X = np.atleast_2d(X).T if X.ndim == 1 else X
-    Y = np.atleast_2d(Y).T if Y.ndim == 1 else Y  
-    Z = np.atleast_2d(Z).T if Z.ndim == 1 else Z
+    # Flatten arrays and convert to integers for discrete estimation
+    X = X.flatten().astype(int)
+    Y = Y.flatten().astype(int)
     
-    # Joint spaces
-    XZ = np.hstack([X, Z])
-    YZ = np.hstack([Y, Z])
-    XYZ = np.hstack([X, Y, Z])
+    # Handle Z which might be multidimensional
+    if Z.ndim > 1:
+        Z_tuples = [tuple(row.astype(int)) for row in Z]
+    else:
+        Z_tuples = Z.flatten().astype(int)
     
-    # Fit k-NN models
     try:
-        nbrs_xz = NearestNeighbors(n_neighbors=k+1, metric='euclidean').fit(XZ)
-        nbrs_yz = NearestNeighbors(n_neighbors=k+1, metric='euclidean').fit(YZ)
-        nbrs_xyz = NearestNeighbors(n_neighbors=k+1, metric='euclidean').fit(XYZ)
-        nbrs_z = NearestNeighbors(n_neighbors=k+1, metric='euclidean').fit(Z)
+        # Get cardinalities
+        card_x = len(set(X))
+        card_y = len(set(Y))
+        card_z = len(set(Z_tuples))
         
-        # Get distances to k-th nearest neighbor for each point
-        distances_xz, _ = nbrs_xz.kneighbors(XZ)
-        distances_yz, _ = nbrs_yz.kneighbors(YZ)
-        distances_xyz, _ = nbrs_xyz.kneighbors(XYZ)
-        distances_z, _ = nbrs_z.kneighbors(Z)
+        # Count frequencies
+        xyz_counts = Counter(zip(X, Y, Z_tuples))
+        xz_counts = Counter(zip(X, Z_tuples))
+        yz_counts = Counter(zip(Y, Z_tuples))
+        z_counts = Counter(Z_tuples)
         
-        # Use k-th neighbor distance (index k, since we include self)
-        eps_xz = distances_xz[:, k]
-        eps_yz = distances_yz[:, k]
-        eps_xyz = distances_xyz[:, k]
-        eps_z = distances_z[:, k]
+        # All possible combinations
+        x_values = sorted(set(X))
+        y_values = sorted(set(Y))
+        z_values = sorted(set(Z_tuples))
         
-        # Estimate conditional MI using k-NN formula
-        # This is a simplified version - full implementation would use digamma functions
-        cmi = np.mean(np.log(eps_xz + 1e-10) + np.log(eps_yz + 1e-10) 
-                     - np.log(eps_xyz + 1e-10) - np.log(eps_z + 1e-10))
+        # Calculate CMI with Laplace smoothing
+        cmi = 0.0
+        
+        for x in x_values:
+            for y in y_values:
+                for z in z_values:
+                    # Smoothed counts
+                    n_xyz = xyz_counts.get((x, y, z), 0) + alpha
+                    n_xz = xz_counts.get((x, z), 0) + alpha * card_y
+                    n_yz = yz_counts.get((y, z), 0) + alpha * card_x  
+                    n_z = z_counts.get(z, 0) + alpha * card_x * card_y
+                    
+                    # Smoothed probabilities
+                    p_xyz = n_xyz / (n + alpha * card_x * card_y * card_z)
+                    p_xz = n_xz / (n + alpha * card_y * card_x * card_z) 
+                    p_yz = n_yz / (n + alpha * card_x * card_y * card_z)
+                    p_z = n_z / (n + alpha * card_x * card_y * card_z)
+                    
+                    # Add to CMI sum
+                    cmi += p_xyz * log(p_xyz * p_z / (p_xz * p_yz))
         
         return max(0.0, cmi)  # CMI should be non-negative
     
     except Exception as e:
-        warnings.warn(f"k-NN CMI estimation failed: {e}")
+        warnings.warn(f"Discrete CMI estimation failed: {e}")
         return 0.0
 
 
@@ -239,7 +254,7 @@ def validate_markov_blanket(cluster_vars, classification, all_vars, data, tolera
             conditioning = np.zeros((len(data)-1, 1))
         
         # Compute conditional MI: I(I_{t+1}; E_{t+1} | S_t, A_t)
-        cmi = conditional_mutual_info_knn(I_t1, E_t1, conditioning)
+        cmi = conditional_mutual_info_discrete(I_t1, E_t1, conditioning)
         
         is_valid = cmi <= tolerance
         details = f"CMI={cmi:.4f}, threshold={tolerance}, S={len(S_vars)}, A={len(A_vars)}, I={len(I_vars)}, E={len(E_vars)}"

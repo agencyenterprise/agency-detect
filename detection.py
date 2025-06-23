@@ -192,14 +192,25 @@ class AgentDetector:
         
         # Step 6: Validate clusters and classify variables
         validated_clusters = {}
+        failed_variables = []  # Track variables from failed agents
         
         for lbl, variables in filtered_clusters.items():
             if len(variables) > 0:
                 result = self.validator.validate_cluster(variables, vars_, data, trace)
-                validated_clusters[lbl] = {
-                    'variables': variables,
-                    **result
-                }
+                
+                # Check if validation failed - if so, track for reassignment
+                if (result['blanket_validation']['valid'] == False and 
+                    self.config.VALIDATE_BLANKETS):
+                    print(f"Agent {lbl} failed Markov blanket validation: {result['blanket_validation']['details']}")
+                    failed_variables.extend(variables)
+                else:
+                    validated_clusters[lbl] = {
+                        'variables': variables,
+                        **result
+                    }
+        
+        # Failed variables go to environment (simpler approach)
+        env_bucket.extend(failed_variables)
         
         # Add environment cluster
         if env_bucket:
@@ -243,6 +254,91 @@ class AgentDetector:
             print("Environment:")
             print(f"  Variables: {clusters['env']['variables']}")
             print(f"  Details: {clusters['env']['blanket_validation']['details']}")
+
+
+
+    def adaptive_detect_agents(self, trace, min_success_rate=0.7, max_attempts=None):
+        """
+        Adaptive agent detection that tries different numbers of agents.
+        
+        Starts with the configured N_AGENTS and reduces until enough agents pass validation.
+        
+        Args:
+            trace: Time series data
+            min_success_rate: Minimum fraction of agents that must pass validation
+            max_attempts: Maximum number of different N_AGENTS to try (default: original N_AGENTS)
+            
+        Returns:
+            Detection results with optimal number of agents
+        """
+        if max_attempts is None:
+            max_attempts = self.config.N_AGENTS
+            
+        original_n_agents = self.config.N_AGENTS
+        
+        print(f"=== Adaptive Agent Detection (starting with N_AGENTS={original_n_agents}) ===")
+        
+        best_results = None
+        best_score = -1
+        
+        for attempt, n_agents in enumerate(range(original_n_agents, 0, -1)):
+            if attempt >= max_attempts:
+                break
+                
+            print(f"\n--- Attempt {attempt + 1}: Trying N_AGENTS={n_agents} ---")
+            
+            # Temporarily set N_AGENTS
+            self.config.N_AGENTS = n_agents
+            
+            try:
+                results = self.detect_agents(trace)
+                
+                # Count valid agents
+                total_agents = len([k for k in results.keys() if k != 'env'])
+                valid_agents = []
+                failed_agents = []
+                
+                for agent_id, agent_data in results.items():
+                    if agent_id != 'env':
+                        is_valid = agent_data['blanket_validation']['valid']
+                        if is_valid == True or is_valid is None:  # None means validation skipped
+                            valid_agents.append(agent_id)
+                        else:
+                            failed_agents.append(agent_id)
+                
+                success_rate = len(valid_agents) / total_agents if total_agents > 0 else 0
+                
+                # Score based on number of valid agents and success rate
+                score = len(valid_agents) + success_rate
+                
+                print(f"Results: {len(valid_agents)}/{total_agents} agents valid (success rate: {success_rate:.1%})")
+                
+                if len(valid_agents) > 0 and success_rate >= min_success_rate:
+                    print(f"✅ Success! Found {len(valid_agents)} valid agents")
+                    best_results = results
+                    break
+                elif score > best_score:
+                    print(f"📈 Best so far (score: {score:.2f})")
+                    best_results = results
+                    best_score = score
+                else:
+                    print(f"📉 Worse than best (score: {score:.2f} vs {best_score:.2f})")
+                    
+            except Exception as e:
+                print(f"❌ Error with N_AGENTS={n_agents}: {e}")
+                continue
+        
+        # Restore original configuration
+        self.config.N_AGENTS = original_n_agents
+        
+        if best_results is not None:
+            valid_count = len([k for k in best_results.keys() if k != 'env' and 
+                             best_results[k]['blanket_validation']['valid'] != False])
+            print(f"\n🎯 Final result: {valid_count} valid agents detected")
+            return best_results
+        else:
+            print(f"\n⚠️ No valid agents found at any clustering level")
+            return {}
 
 
 def detect_async_agents(trace, **kwargs):

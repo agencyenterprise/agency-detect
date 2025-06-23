@@ -200,8 +200,17 @@ def validate_markov_blanket(cluster_vars, classification, all_vars, data, tolera
     I_vars = classification['I']  # Internal states
     E_vars = [var for var in all_vars if var not in cluster_vars]  # Environment
     
-    if not I_vars or not E_vars or len(data) < 10:
-        return True, 0.0, "Insufficient data or variables for validation"
+    # Agents must have internal variables to be valid
+    if not I_vars:
+        return False, 1.0, "Invalid: Agent has no internal variables"
+    
+    # Need environment variables to test against
+    if not E_vars:
+        return False, 1.0, "Invalid: No environment variables for testing"
+    
+    # Need sufficient data
+    if len(data) < 10:
+        return False, 1.0, "Invalid: Insufficient data for validation"
     
     # Prepare data for conditional MI calculation
     # We need t and t+1 time steps

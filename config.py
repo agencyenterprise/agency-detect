@@ -10,7 +10,7 @@ class SimulationConfig:
     """Configuration for agent simulation parameters."""
     
     # Simulation parameters
-    SIMULATION_STEPS = 10000
+    SIMULATION_STEPS = 15000
     RANDOM_SEED = 42
     
     # Agent design parameters
@@ -49,8 +49,8 @@ class DetectionConfig:
     FUTURE_MI_PERCENTILE = 50  # Percentile for future MI threshold
     
     # Markov blanket validation parameters
-    VALIDATE_BLANKETS = False  # Can be enabled for strict validation
-    BLANKET_TOLERANCE = 0.1
+    VALIDATE_BLANKETS = True  # Can be enabled for strict validation
+    BLANKET_TOLERANCE = 5.0  # Increased for discrete data with k-NN estimation
     CMI_K_NEIGHBORS = 3
 
 

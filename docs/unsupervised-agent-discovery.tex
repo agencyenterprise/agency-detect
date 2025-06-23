@@ -1,0 +1,172 @@
+\documentclass[10pt,conference]{IEEEtran}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{cite}
+\usepackage{hyperref}
+
+\begin{document}
+
+\title{Foundations of Unsupervised Agent Discovery\\in Raw Dynamical Systems}
+
+\author{Gunnar Zarncke\\
+AE Studio\\
+\small{Date: \today}}
+
+\maketitle
+
+\begin{abstract}
+We develop a principled framework for uncovering coherent ``agents'' within raw dynamical data streams without supervision.  Building on the concept of Markov blankets, we show how to (1) locate agent boundaries via conditional‐independence tests, (2) extract memory substrates by lagged mutual‐information analysis, (3) infer latent objectives through information‐theoretic Lagrangians, and (4) characterize inter‐agent relationships via signed mutual‐information coupling.  Our approach unifies active‐inference, inverse‐reinforcement, and information‐bottleneck principles into a single operational pipeline, and lends itself to both theoretical analysis and practical implementation in minimal simulations.
+\end{abstract}
+
+\section{Introduction}
+Complex adaptive systems—from biochemical networks to multi‐agent simulations—often conceal coherent actors with private states, memories, and goals.  Traditional supervised labeling is impractical at scale.  Here we propose an \emph{unsupervised} methodology for agent discovery directly from timestamped state‐variable traces $\{X_i(t)\}_{i=1}^N$.  We leverage \emph{Markov blankets} \cite{ConantAshby1970,Friston2010} as minimal interfaces that render internal and external dynamics conditionally independent:
+\begin{equation}
+I\bigl(I_{t+1};E_{t+1}\mid S_t,A_t\bigr)\;\approx\;0,
+\end{equation}
+where $S_t$ (sensory input), $A_t$ (action), $I_t$ (internal state), and $E_t$ (external variables) \cite{Kirchhoff2018} are defined below.
+
+\section{Background: Markov Blankets and Active Inference}
+A \emph{Markov blanket} for a set of variables $C$ partitions observations into:
+\begin{itemize}
+  \item $S^C_t$: sensor readings at time $t$ (inputs),
+  \item $A^C_t$: outputs or motor commands (actions),
+  \item $I^C_t$: latent or internal states,
+  \item $E^C_t$: the rest of the environment.
+\end{itemize}
+The blanket property
+
+\begin{align}
+P\bigl(I^C_{t+1},E^C_{t+1} \mid I^C_t, S^C_t, A^C_t\bigr)
+&= P(I^C_{t+1} \mid I^C_t, S^C_t, A^C_t) \notag \\
+&\quad \cdot P(E^C_{t+1} \mid I^C_t, S^C_t, A^C_t)
+\end{align}
+
+ensures that once $S^C_t$ and $A^C_t$ are known, deeper $E^C_t$ adds no further predictive power.  
+
+Active‐inference casts behavior as minimization of a variational free‐energy \cite{Friston2010}::
+\[
+\min_{\pi}\;\mathbb{E}\bigl[-\log P(S\mid I)\bigr]
+\;+\;\mathbb{E}\bigl[\mathrm{KL}\bigl(\pi(A\mid I)\;\|\;P(A\mid I)\bigr)\bigr],
+\]
+where $\pi(A\mid I)$ is the agent's policy (a mapping from internal state to action distribution), and $P(A\mid I)$ is the generative model.
+
+\section{Methodology}
+
+\subsection{Agent Boundary Localization}
+We record a trace matrix $X(t)\in\mathbb{R}^N$ over $t=1,\dots,T$.
+\begin{enumerate}
+  \item Compute per‐variable activity $\mathrm{Var}[X_i]$ or "motion energy" and threshold to select active indices.
+  \item Cluster active variables by pairwise correlation or mutual‐information affinity.
+  \item For each candidate cluster $C$, estimate the conditional mutual information
+  \[
+  I\bigl(I^C_{t+1};E^C_{t+1}\mid S^C_t,A^C_t\bigr),
+  \]
+  using sliding‐window, binned, or k‐NN estimators.  Recursively split or prune clusters until the blanket‐violation is below a tolerance $\varepsilon$.
+\end{enumerate}
+
+\subsection{Memory Localization}
+Within a discovered agent $C$, each variable $m\in I^C$ is tested for memory‐role via
+\[
+\Delta_m(k)
+=
+I\bigl(m_{t-k};\,I^C_{t+1}\mid S^C_t,\,A^C_t,\,I^C_t\setminus\{m_t\}\bigr),
+\]
+where $k$ (the \emph{lag} in time‐steps) indexes how far back we shift $m$.  A significant $\Delta_m(k)$ indicates that the past value $m_{t-k}$ carries unique predictive information, and thus functions as part of the agent's memory.  
+
+
+\subsection{Goal Inference}
+We view the agent as an MDP $(I_t,A_t)$ and infer latent rewards via:
+\[
+\hat R = \arg\max_R P(\{A_t\}\mid\{I_t\},R)\,P(R),
+\]
+where $R(I,A)$ assigns scalar utility to each $(I,A)$ pair.
+
+Or we cast behavior directly as free‐energy minimization (Eq.~2).
+Optionally, action‐sequence segmentation yields subgoals via termination‐context analysis \cite{NgRussell2000,Ziebart2008}.
+
+
+\subsection{Inter‐Agent Modeling}
+For agents $X$ and $Y$ (clusters as identified above), let $A^Y_t$ be $Y$'s observed actions.  Agent $X$'s internal model of $Y$ resides in slots $m\in I^X$ that satisfy
+\[
+\Delta_{m,Y}(k)
+=
+I\bigl(m_{t-k};\,A^Y_t\mid S^X_t,\,A^X_t,\,I^X_t\setminus\{m_t\}\bigr).
+\]
+Clustering those high‐scoring $m$ recovers $X$'s representation of $Y$ (its "theory‐of‐mind").
+
+
+\section{Evolutionary Selection and Cooperation}
+Agents optimize a canonical free‐energy fitness augmented by signed MI:
+\begin{align}
+\mathcal F_X &= -\mathbb{E}_q[\log P(S^X_t\mid I^X_t)] \notag \\
+&\quad - \mathrm{KL}(q(I^X_t)\|P(I^X_t\mid I^X_{t-1},A^X_{t-1})) \notag \\
+&\quad \pm\gamma\,I(M^Y_t;A^Y_t)
+\end{align}
+
+Here $q(I^X_t)$ is the recognition density, $P(S^X_t\mid I^X_t)$ the likelihood, KL penalizes complexity, and sign of $\gamma$ encodes opacity vs. transparency.
+
+We derive a classic cooperation condition by considering a focal agent $X$ and partner $Y$ interacting repeatedly.  Let
+\begin{itemize}
+  \item \(b\): the marginal \textbf{benefit} to \(X\) from one cooperative action by \(Y\)—i.e.\ the reduction in \(X\)'s expected free‐energy (or task‐loss) per bit of information gained, estimated as \(d\,\mathbb{E}[\mathrm{Loss}_X]/d\,I(M^Y;A^Y)\).
+  \item \(c\): the marginal \textbf{cost} to \(Y\) per cooperative action—i.e.\ the increase in its own free‐energy penalty (memory or control cost) per bit of action encoded.
+  \item \(p\): the empirical \textbf{probability} that \(Y\)'s cooperative action actually enters \(X\)'s sensory channel (the fraction of interactions where \(A^Y_t\) appears in \(S^X_{t+\delta}\)).
+  \item \(\rho\): the \textbf{strategic correlation} or relatedness between \(X\) and \(Y\), measurable as normalized mutual information \(\rho=I(M^Y;A^Y)/H(A^Y)\) or via reward‐alignment correlations.
+\end{itemize}
+Under replicator or repeated-game dynamics, $X$'s net gain from eliciting $Y$'s cooperation exceeds $Y$'s cost when
+\[
+b\,p\,\rho > c.
+\]
+This generalizes Hamilton's rule \cite{Hamilton1964} to include interaction probability $p$. Rearranging, we define the environmental cooperativity index as
+\[
+\kappa = \frac{b\,p\,\rho}{c},
+\]
+and cooperation is selected when $\kappa>1$.
+
+\subsection{Estimating Predictability Weight}
+\textbf{Dual‐curve Frontier:} Vary encoding of $Y$'s actions to obtain $(\mathcal I,I)\mapsto\mathcal P$ where
+\[\mathcal P=-\mathbb{E}[\mathrm{Loss}_X],\;\mathcal I=I(M^Y;A^Y).\]
+Fit Pareto‐frontier $\mathcal P=f(\mathcal I)$, then
+\[
+\hat\gamma=\left.\frac{d\mathcal P}{d\mathcal I}\right|_{\mathcal I^*}
+\]
+-- the marginal utility per bit of predictability.  
+
+\textbf{Bayesian Inference:} Assume prior $p(\gamma)$ and Gaussian noise on observed fitness $F_i$, then:
+\[
+ p(\gamma\mid\{F_i,H_i,I_i\})\propto p(\gamma)\prod_i\exp\Bigl(-\frac{[F_i+\lambda H_i\mp\gamma I_i]^2}{2\sigma^2}\Bigr).
+\]
+Maximize or sample to estimate $\gamma$ with uncertainty.
+
+
+\section{Discussion}
+Our framework operationalizes Markov blankets for \emph{unsupervised} discovery of agents, memories, intentions, and social couplings in arbitrary dynamical systems.  By grounding all costs and benefits in observable entropies and mutual informations, we avoid ad‐hoc fitness currencies and gain direct empirical estimability.
+
+\section{Conclusion}
+Nested Markov blankets provide a first‐principles toolkit for revealing the structure of adaptive systems.  Future work will apply these methods to neural data, cell microscopy, memory analysis, and evolutionary simulations.
+
+\bibliographystyle{IEEEtran}
+\bibliography{refs}
+
+\begin{thebibliography}{1}
+\bibitem{ConantAshby1970}
+R.~C. Conant and W.~R. Ashby, ``Every good regulator of a system must be a model of that system,'' \emph{Int. J. Systems Science}, vol.~1, no.~2, pp.89--97, 1970.
+
+\bibitem{Friston2010}
+K.~Friston, ``The free‐energy principle: a unified brain theory?'' \emph{Nat. Rev. Neurosci.}, vol.~11, no.~2, pp.127--138, 2010.
+
+\bibitem{Kirchhoff2018}
+M.~D. Kirchhoff, T.~Parr, E.~Palacios, K.~Friston, and J.~Kiverstein, ``The Markov blankets of life: autonomy, active inference and the free energy principle,'' \emph{J. R. Soc. Interface}, vol.~15, no.~138, 2018.
+
+\bibitem{NgRussell2000}
+A.~Y. Ng and S.~J. Russell, ``Algorithms for inverse reinforcement learning,'' in \emph{Proc. ICML}, 2000, pp.663--670.
+
+\bibitem{Ziebart2008}
+B.~D. Ziebart, A.~L. Maas, J.~A. Bagnell, and A.~K. Dey, ``Maximum entropy inverse reinforcement learning,'' in \emph{Proc. AAAI}, 2008, pp.1433--1438.
+
+\bibitem{Hamilton1964}
+W.~D. Hamilton, ``The genetical evolution of social behaviour,'' \emph{J. Theor. Biol.}, vol.~7, no.~1, pp.1--16, 1964.
+\end{thebibliography}
+
+
+\end{document}
+

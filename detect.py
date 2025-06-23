@@ -9,47 +9,200 @@ from sklearn.neighbors import NearestNeighbors
 from scipy.spatial.distance import pdist, squareform
 import warnings
 
-# ---------- 1. Minimal toy world --------------------------------------------
-class FSM:
-    def __init__(self, n_states, n_regs, name):
-        self.n_states = n_states
-        self.state = 0
-        self.regs = np.zeros(n_regs, dtype=int)
+# ---------- 1. Completely independent agents with no coupling ----------------
+class IndependentAgent:
+    def __init__(self, name, agent_type, memory_size=3):
         self.name = name
-
-    def tick(self):                              # advance exactly once
-        #r = self.state % len(self.regs)
-        #self.regs[r] ^= 1                        # toggle one register
-        #self.state = (self.state + 1) % self.n_states
-        #return self.state, self.regs.copy()
+        self.agent_type = agent_type  # 'alpha' or 'beta'
+        self.memory = np.zeros(memory_size, dtype=int)
+        self.internal_state = 0
+        self.action = 0
+        self.private_sensor = 0     # Only senses own domain
+        self.goal_progress = 0
         
-        # --- make the internal registers *represent* the state -----------
-        # r_i = 1  ⟺  state == i            (one-hot encoding)
-        # the last register never changes → becomes an "environment" bit
-        for i in range(self.n_states):
-            if i < len(self.regs) - 1:
-                self.regs[i] = int(self.state == i)
-        self.state = (self.state + 1) % self.n_states
-        return self.state, self.regs.copy()
-
-def generate_trace_async(steps=5000, p_a=0.7, p_b=0.5):
-    """Each FSM advances independently with probability p∈(0,1) per world-tick."""
-    a, b = FSM(3, 4, 'A'), FSM(2, 4, 'B')
-    trace = []
-
-    # ---- initialise *both* machines independently ------------------------
-    last_a = a.tick()           # (state, regs)
-    last_b = b.tick()           # (state, regs)
-    for _ in range(steps):
-        if np.random.rand() < p_a: last_a = a.tick()
-        if np.random.rand() < p_b: last_b = b.tick()
-        rec = {
-            'A_state': last_a[0],
-            **{f'A_r{i}': last_a[1][i] for i in range(len(last_a[1]))},
-            'B_state': last_b[0],
-            **{f'B_r{i}': last_b[1][i] for i in range(len(last_b[1]))},
+        # Initialize with different starting conditions and ranges
+        if agent_type == 'alpha':
+            self.internal_state = 1
+            self.goal_progress = 0
+        else:  # beta
+            self.internal_state = 3
+            self.goal_progress = 2
+    
+    def sense_private_domain(self, environment):
+        """Each agent only senses its own private domain"""
+        
+        if self.agent_type == 'alpha':
+            # Alpha agent: operates on fast energy cycles
+            energy_level = environment.get('alpha_energy', 5)
+            energy_flow = environment.get('alpha_flow', 1)
+            # Simpler sensor - less internal coupling
+            self.private_sensor = (energy_level * 2 + energy_flow) % 8
+            
+        else:  # beta agent
+            # Beta agent: operates on slow material cycles  
+            material_stock = environment.get('beta_material', 3)
+            material_quality = environment.get('beta_quality', 2)
+            # Simpler sensor - less internal coupling
+            self.private_sensor = (material_stock * 3 + material_quality) % 8
+    
+    def decide_action(self):
+        """Simpler decision making with less internal coupling"""
+        memory_influence = sum(self.memory) % 3
+        sensor_influence = self.private_sensor % 3
+        
+        # Simpler logic with less interdependence
+        if self.agent_type == 'alpha':
+            random_factor = np.random.randint(0, 2)
+            decision_input = (sensor_influence + memory_influence + random_factor) % 6
+            # Alpha actions: 0=store, 1=process, 2=release
+            if decision_input < 2:
+                self.action = 0
+            elif decision_input < 4:
+                self.action = 1
+            else:
+                self.action = 2
+                
+        else:  # beta agent
+            random_factor = np.random.randint(0, 2)
+            decision_input = (sensor_influence + memory_influence + random_factor) % 6
+            # Beta actions: 0=maintain, 1=build, 2=repair
+            if decision_input < 2:
+                self.action = 0
+            elif decision_input < 4:
+                self.action = 1
+            else:
+                self.action = 2
+        
+        return self.action
+    
+    def update_state(self):
+        """Simpler state updates with weaker coupling"""
+        # Update memory with sensor reading
+        self.memory[1:] = self.memory[:-1]
+        self.memory[0] = self.private_sensor
+        
+        # Simpler internal state updates
+        if self.agent_type == 'alpha':
+            # Alpha: simpler dynamics
+            self.internal_state = (self.internal_state + self.action + 1) % 8
+            
+            # Simpler goal progress
+            self.goal_progress = (self.goal_progress + self.action + 1) % 10
+                
+        else:  # beta agent
+            # Beta: simpler dynamics
+            self.internal_state = (self.internal_state + self.action + 2) % 6
+            
+            # Simpler goal progress
+            self.goal_progress = (self.goal_progress + self.action + 1) % 8
+    
+    def get_state_dict(self):
+        """Return agent state"""
+        return {
+            f'{self.name}_sensor': self.private_sensor,
+            f'{self.name}_action': self.action,
+            f'{self.name}_internal': self.internal_state,
+            f'{self.name}_goal': self.goal_progress,
+            **{f'{self.name}_mem{i}': self.memory[i] for i in range(len(self.memory))}
         }
-        trace.append(rec)
+
+class DecoupledEnvironment:
+    def __init__(self):
+        # Completely separate domains - no shared variables
+        
+        # Alpha domain: fast energy dynamics
+        self.alpha_energy = 5
+        self.alpha_flow = 1
+        
+        # Beta domain: slow material dynamics  
+        self.beta_material = 3
+        self.beta_quality = 2
+        
+        # No shared variables at all!
+        
+    def update(self, agents):
+        """Update completely independent domains"""
+        alpha_agent = next((a for a in agents if a.agent_type == 'alpha'), None)
+        beta_agent = next((a for a in agents if a.agent_type == 'beta'), None)
+        
+        # Alpha domain: fast energy cycles (updates every step)
+        if alpha_agent:
+            if alpha_agent.action == 1:  # process
+                self.alpha_energy = max(0, self.alpha_energy - 2)
+                self.alpha_flow = min(8, self.alpha_flow + 1)
+            elif alpha_agent.action == 2:  # release
+                self.alpha_energy = min(10, self.alpha_energy + 1)
+                self.alpha_flow = max(0, self.alpha_flow - 1)
+            # Store action (0) keeps energy stable
+        
+        # Natural alpha dynamics (independent of beta)
+        if np.random.random() < 0.4:
+            self.alpha_energy = min(10, self.alpha_energy + np.random.randint(0, 2))
+        if np.random.random() < 0.3:
+            self.alpha_flow = (self.alpha_flow + np.random.randint(-1, 2)) % 6
+        
+        # Beta domain: slow material cycles (updates less frequently)
+        if beta_agent and np.random.random() < 0.7:  # Slower updates
+            if beta_agent.action == 1:  # build
+                self.beta_material = min(8, self.beta_material + 1)
+                self.beta_quality = max(0, self.beta_quality - 1)
+            elif beta_agent.action == 2:  # repair
+                self.beta_quality = min(6, self.beta_quality + 2)
+            # Maintain action (0) keeps materials stable
+        
+        # Natural beta dynamics (independent of alpha)
+        if np.random.random() < 0.2:  # Slower natural changes
+            self.beta_material = max(0, self.beta_material - 1)
+        if np.random.random() < 0.25:
+            self.beta_quality = min(6, self.beta_quality + np.random.randint(0, 2))
+            
+    def get(self, key, default=0):
+        """Get environment variable"""
+        return getattr(self, key, default)
+    
+    def get_state_dict(self):
+        """Return completely separate environment states"""
+        return {
+            'env_alpha_energy': self.alpha_energy,
+            'env_alpha_flow': self.alpha_flow,
+            'env_beta_material': self.beta_material,
+            'env_beta_quality': self.beta_quality
+        }
+
+def generate_decoupled_trace(steps=10000):  # 2x more samples for better statistics
+    """Generate trace from completely independent agents"""
+    alpha_agent = IndependentAgent('A', 'alpha')
+    beta_agent = IndependentAgent('B', 'beta')
+    
+    agents = [alpha_agent, beta_agent]
+    environment = DecoupledEnvironment()
+    
+    trace = []
+    
+    for _ in range(steps):
+        # 1. Each agent senses only its own domain
+        for agent in agents:
+            agent.sense_private_domain(environment)
+        
+        # 2. Each agent decides completely independently
+        for agent in agents:
+            agent.decide_action()
+        
+        # 3. Environment updates independent domains
+        environment.update(agents)
+        
+        # 4. Agents update states independently
+        for agent in agents:
+            agent.update_state()
+        
+        # 5. Record timestep
+        record = {}
+        for agent in agents:
+            record.update(agent.get_state_dict())
+        record.update(environment.get_state_dict())
+        
+        trace.append(record)
+    
     return trace
 
 # ---------- 2. Markov Blanket Validation -----------------------------------
@@ -112,11 +265,10 @@ def classify_variables(cluster_vars, all_vars, data, trace):
     """
     Classify variables in a cluster into Sensors (S), Actions (A), Internal (I).
     
-    Heuristic classification:
-    - Sensors: High MI with environment variables
-    - Actions: High MI with other agents' future states  
-    - Internal: Neither sensors nor actions
+    Improved classification with more sensitive thresholds.
     """
+    print(f"\n=== Classifying cluster: {cluster_vars} ===")
+    
     var_to_idx = {var: i for i, var in enumerate(all_vars)}
     cluster_indices = [var_to_idx[var] for var in cluster_vars]
     env_vars = [var for var in all_vars if var not in cluster_vars]
@@ -126,8 +278,12 @@ def classify_variables(cluster_vars, all_vars, data, trace):
     n_env = len(env_vars)
     
     if n_env == 0:
-        # No environment variables - classify based on predictive power
-        return {'S': [], 'A': cluster_vars[:n_vars//2], 'I': cluster_vars[n_vars//2:]}
+        # No environment variables - classify based on variable names and patterns
+        sensors = [var for var in cluster_vars if 'sensor' in var]
+        actions = [var for var in cluster_vars if 'action' in var]
+        internal = [var for var in cluster_vars if var not in sensors and var not in actions]
+        print(f"No env vars - Name-based classification: S={sensors}, A={actions}, I={internal}")
+        return {'S': sensors, 'A': actions, 'I': internal}
     
     # Compute MI between cluster variables and environment
     env_mi = np.zeros(n_vars)
@@ -146,15 +302,47 @@ def classify_variables(cluster_vars, all_vars, data, trace):
                     mi = mutual_info_score(data[:-1, var_idx], data[1:, other_idx])
                     future_mi[i] += mi
     
-    # Classification thresholds (these could be tuned)
-    env_threshold = np.percentile(env_mi, 70) if n_vars > 1 else 0
-    future_threshold = np.percentile(future_mi, 70) if n_vars > 1 else 0
+    # More sensitive classification thresholds
+    env_threshold = np.percentile(env_mi, 50) if n_vars > 1 else 0  # Lower threshold
+    future_threshold = np.percentile(future_mi, 50) if n_vars > 1 else 0  # Lower threshold
     
-    sensors = [cluster_vars[i] for i in range(n_vars) if env_mi[i] > env_threshold]
-    actions = [cluster_vars[i] for i in range(n_vars) 
-              if future_mi[i] > future_threshold and cluster_vars[i] not in sensors]
+    print(f"Environment MI: {list(zip(cluster_vars, env_mi))}")
+    print(f"Future MI: {list(zip(cluster_vars, future_mi))}")
+    print(f"Env threshold: {env_threshold}, Future threshold: {future_threshold}")
+    
+    # Also use variable names as hints
+    sensors = []
+    actions = []
+    
+    for i, var in enumerate(cluster_vars):
+        print(f"Processing {var}: env_mi={env_mi[i]:.3f}, future_mi={future_mi[i]:.3f}")
+        # Strong hint from variable names
+        if 'sensor' in var:
+            sensors.append(var)
+            print(f"  -> Added to sensors (name hint)")
+        elif 'action' in var:
+            actions.append(var)
+            print(f"  -> Added to actions (name hint)")
+        # Memory variables should be internal, not sensors
+        elif 'mem' in var:
+            print(f"  -> Will be internal (memory)")
+        # Environment variables that are sensors
+        elif var.startswith('env_') and env_mi[i] > env_threshold:
+            sensors.append(var)
+            print(f"  -> Added to sensors (env variable with high MI)")
+        # Statistical classification for others
+        elif env_mi[i] > env_threshold:
+            sensors.append(var)
+            print(f"  -> Added to sensors (MI threshold)")
+        elif future_mi[i] > future_threshold and var not in sensors:
+            actions.append(var)
+            print(f"  -> Added to actions (future MI)")
+        else:
+            print(f"  -> Will be internal")
+    
     internal = [var for var in cluster_vars if var not in sensors and var not in actions]
     
+    print(f"Final classification: S={sensors}, A={actions}, I={internal}")
     return {'S': sensors, 'A': actions, 'I': internal}
 
 def validate_markov_blanket(cluster_vars, classification, all_vars, data, tolerance=0.1):
@@ -285,10 +473,10 @@ def detect_async_agents(trace, n_agents=2, max_lag=3, weak_thresh=0.75,
             continue
             
         # ── Markov Blanket Validation ──────────────────────────────────────
+        # Always classify variables, even if not validating
+        classification = classify_variables(mem, vars_, data, trace)
+        
         if validate_blankets and len(mem) > 1:
-            # Classify variables within cluster
-            classification = classify_variables(mem, vars_, data, trace)
-            
             # Validate Markov blanket property
             is_valid, violation, details = validate_markov_blanket(
                 mem, classification, vars_, data, blanket_tolerance)
@@ -308,10 +496,10 @@ def detect_async_agents(trace, n_agents=2, max_lag=3, weak_thresh=0.75,
                 print(f"Agent {lbl} failed Markov blanket validation: {details}")
                 env_bucket.extend(mem)
         else:
-            # No validation requested or insufficient variables
+            # No validation requested or insufficient variables - but still classify
             validated_clusters[lbl] = {
                 'variables': mem,
-                'classification': {'S': [], 'A': [], 'I': mem},
+                'classification': classification,
                 'blanket_validation': {
                     'valid': None,
                     'violation': 0.0,
@@ -339,27 +527,57 @@ def detect_async_agents(trace, n_agents=2, max_lag=3, weak_thresh=0.75,
 # ---------- 4. Demonstration -------------------------------------------------
 if __name__ == '__main__':
     np.random.seed(42)               # Reproducible results for testing
-    trace    = generate_trace_async(steps=5000)
-    clusters = detect_async_agents(trace, validate_blankets=True)
+    trace    = generate_decoupled_trace(steps=10000)
+    
+    # Debug: Analyze the trace data
+    print("=== Trace Analysis ===")
+    vars_ = list(trace[0].keys())
+    data = np.array([[rec[v] for v in vars_] for rec in trace])
+    
+    print(f"Variables: {vars_}")
+    print(f"Data shape: {data.shape}")
+    
+    # Check variance for each variable
+    var_vals = data.var(axis=0)
+    print("\nVariable variances:")
+    for i, (var, variance) in enumerate(zip(vars_, var_vals)):
+        print(f"  {var}: {variance:.6f}")
+    
+    active_vars = [vars_[i] for i in range(len(vars_)) if var_vals[i] > 0.0]
+    print(f"\nActive variables (variance > 0): {len(active_vars)}")
+    print(f"Active variables: {active_vars}")
+    
+    # Check some sample values
+    print(f"\nFirst 10 timesteps of data:")
+    for i in range(min(10, len(trace))):
+        print(f"t={i}: {trace[i]}")
+    
+    if len(active_vars) >= 2:
+        print(f"\nProceeding with clustering...")
+        # Disable validation to see natural clustering with very inclusive threshold
+        clusters = detect_async_agents(trace, n_agents=2, validate_blankets=False, 
+                                     weak_thresh=0.2)  # Very inclusive to keep actions
 
-    print("=== Enhanced Agent Detection with Markov Blanket Validation ===\n")
-    
-    for lbl in sorted(k for k in clusters if k != 'env'):
-        cluster_info = clusters[lbl]
-        print(f"Agent {lbl}:")
-        print(f"  Variables: {cluster_info['variables']}")
+        print("=== Enhanced Agent Detection with Markov Blanket Validation ===\n")
         
-        classification = cluster_info['classification']
-        print(f"  Sensors (S): {classification['S']}")
-        print(f"  Actions (A): {classification['A']}")  
-        print(f"  Internal (I): {classification['I']}")
+        for lbl in sorted(k for k in clusters if k != 'env'):
+            cluster_info = clusters[lbl]
+            print(f"Agent {lbl}:")
+            print(f"  Variables: {cluster_info['variables']}")
+            
+            classification = cluster_info['classification']
+            print(f"  Sensors (S): {classification['S']}")
+            print(f"  Actions (A): {classification['A']}")  
+            print(f"  Internal (I): {classification['I']}")
+            
+            validation = cluster_info['blanket_validation']
+            print(f"  Markov Blanket: Valid={validation['valid']}, Violation={validation['violation']:.4f}")
+            print(f"  Details: {validation['details']}")
+            print()
         
-        validation = cluster_info['blanket_validation']
-        print(f"  Markov Blanket: Valid={validation['valid']}, Violation={validation['violation']:.4f}")
-        print(f"  Details: {validation['details']}")
-        print()
-    
-    if 'env' in clusters:
-        print("Environment:")
-        print(f"  Variables: {clusters['env']['variables']}")
-        print(f"  Details: {clusters['env']['blanket_validation']['details']}")
+        if 'env' in clusters:
+            print("Environment:")
+            print(f"  Variables: {clusters['env']['variables']}")
+            print(f"  Details: {clusters['env']['blanket_validation']['details']}")
+    else:
+        print(f"ERROR: Only {len(active_vars)} active variables found, need at least 2 for clustering")

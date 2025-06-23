@@ -60,6 +60,8 @@ Based on the paper "Foundations of Unsupervised Agent Discovery in Raw Dynamical
 
 ## Getting Started
 
+### Quick Start
+
 ```bash
 python detect.py
 ```
@@ -69,5 +71,51 @@ This will:
 2. Analyze the time series data for agent boundaries
 3. Classify variables as sensors, actions, or internal states
 4. Display the discovered agent structures
+
+### Modular Architecture
+
+The codebase is organized into clean, modular components:
+
+- **`config.py`**: Configuration parameters
+- **`agents.py`**: Agent simulation classes  
+- **`markov_blanket.py`**: Markov blanket validation
+- **`detection.py`**: Core detection algorithm
+- **`detect.py`**: Main demonstration
+
+### Using Individual Components
+
+```python
+from agents import generate_decoupled_trace
+from detection import AgentDetector
+from config import SimulationConfig, DetectionConfig
+
+# Configure simulation
+sim_config = SimulationConfig()
+sim_config.SIMULATION_STEPS = 5000
+sim_config.RANDOM_SEED = 123
+
+# Configure detection  
+det_config = DetectionConfig()
+det_config.WEAK_THRESHOLD = 0.3
+det_config.VALIDATE_BLANKETS = True
+
+# Generate data
+trace = generate_decoupled_trace(steps=sim_config.SIMULATION_STEPS)
+
+# Run detection
+detector = AgentDetector(det_config)
+results = detector.detect_agents(trace)
+detector.print_results(results)
+```
+
+### Backward Compatibility
+
+The old API is still supported:
+
+```python
+from detect import detect_async_agents
+
+results = detect_async_agents(trace, n_agents=2, weak_thresh=0.2)
+```
 
 See `dev.md` for detailed implementation notes and `docs/unsupervised-agent-discovery.tex` for the full theoretical framework. 

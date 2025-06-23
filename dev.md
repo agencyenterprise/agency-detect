@@ -186,10 +186,70 @@ Internal (I): ['B_internal', 'B_mem0', 'B_mem1', 'B_mem2', 'env_beta_quality'] #
 
 ## Files Structure
 
-- `detect.py`: Main implementation with agent simulation and detection
-- `docs/unsupervised-agent-discovery.tex`: Theoretical paper
-- `README.md`: High-level project overview  
-- `dev.md`: This detailed documentation
+### Refactored Modular Architecture
+
+- **`detect.py`**: Main entry point and demonstration (67 lines)
+- **`config.py`**: Configuration parameters split into SimulationConfig and DetectionConfig (50 lines)
+- **`agents.py`**: Agent simulation classes and environment (185 lines)
+- **`markov_blanket.py`**: Markov blanket validation and conditional MI (225 lines)
+- **`detection.py`**: Core detection algorithm and clustering (215 lines)
+
+- **`docs/unsupervised-agent-discovery.tex`**: Theoretical paper
+- **`README.md`**: High-level project overview  
+- **`dev.md`**: This detailed documentation
+
+### Key Benefits of Refactoring
+
+1. **Separation of Concerns**: Each module has a single responsibility
+2. **Split Configuration**: Simulation and detection parameters are independently configurable
+3. **Testability**: Individual components can be tested in isolation
+4. **Maintainability**: Much easier to modify specific functionality
+5. **Reusability**: Components can be used independently in other projects
+6. **Clarity**: Code is more readable and easier to understand
+
+### Configuration Split
+
+The configuration is now split into two classes for better separation of concerns:
+
+**`SimulationConfig`**: Controls agent simulation parameters
+- Simulation steps, random seed
+- Agent memory size and state ranges
+- Environment update probabilities
+
+**`DetectionConfig`**: Controls detection algorithm parameters  
+- Clustering parameters (weak threshold, max lag)
+- Classification thresholds
+- Markov blanket validation settings
+
+### Module Dependencies
+
+```
+detect.py
+├── config.py (SimulationConfig, DetectionConfig)
+├── agents.py
+│   └── config.py (SimulationConfig)
+└── detection.py
+    ├── config.py (DetectionConfig)
+    └── markov_blanket.py
+        └── config.py (DetectionConfig)
+```
+
+### Usage Examples
+
+**Independent Configuration**:
+```python
+from config import SimulationConfig, DetectionConfig
+
+# Configure simulation independently
+sim_config = SimulationConfig()
+sim_config.SIMULATION_STEPS = 2000
+sim_config.MEMORY_SIZE = 5
+
+# Configure detection independently
+det_config = DetectionConfig()
+det_config.WEAK_THRESHOLD = 0.1
+det_config.VALIDATE_BLANKETS = True
+```
 
 ## Running the Code
 

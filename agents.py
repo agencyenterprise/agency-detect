@@ -1,8 +1,11 @@
 """
 Agent simulation classes for generating test data.
 
-This module contains completely independent agents operating in separate domains
-to demonstrate clean agent boundary detection.
+This module contains independent Solar Panel and Factory agents operating
+in separate domains to demonstrate clean agent boundary detection.
+
+Solar Panel agents manage energy collection and discharge cycles.
+Factory agents manage production and equipment maintenance.
 """
 
 import numpy as np
@@ -11,13 +14,13 @@ from config import SimulationConfig
 
 class IndependentAgent:
     """
-    An autonomous agent operating in a specific domain.
+    An autonomous agent operating in a specific resource domain.
     
     Each agent has:
-    - Private sensors that only read from its domain
-    - Actions that only affect its domain  
-    - Internal state and memory system
-    - Goal-directed behavior
+    - Private sensors that monitor its domain (energy levels or production capacity)
+    - Actions that affect its domain (sleep/charge/discharge or idle/produce/maintain)
+    - Internal state representing system condition
+    - Goal-directed behavior with realistic dynamics
     """
     
     def __init__(self, name, agent_type, memory_size=None):
@@ -25,7 +28,7 @@ class IndependentAgent:
             memory_size = SimulationConfig.MEMORY_SIZE
             
         self.name = name
-        self.agent_type = agent_type  # 'alpha' or 'beta'
+        self.agent_type = agent_type  # 'solar_panel' or 'factory'
         self.memory = np.zeros(memory_size, dtype=int)
         self.internal_state = 0
         self.action = 0
@@ -33,168 +36,249 @@ class IndependentAgent:
         self.goal_progress = 0
         
         # Initialize with different starting conditions and ranges
-        if agent_type == 'alpha':
+        if agent_type == 'solar_panel':
             self.internal_state = 1
             self.goal_progress = 0
-        else:  # beta
+        else:  # factory
             self.internal_state = 3
             self.goal_progress = 2
     
     def sense_private_domain(self, environment):
-        """Each agent only senses its own private domain"""
+        """Each agent senses its domain with realistic sensor functions"""
         
-        if self.agent_type == 'alpha':
-            # Alpha agent: operates on fast energy cycles
-            energy_level = environment.get('alpha_energy', 5)
-            energy_flow = environment.get('alpha_flow', 1)
-            # Simpler sensor - less internal coupling
-            self.private_sensor = (energy_level * 2 + energy_flow) % 8
+        if self.agent_type == 'solar_panel':
+            # Solar Panel: Energy level sensor with noise and saturation
+            energy_level = environment.get('solar_panel_energy', 5)
+            energy_flow = environment.get('solar_panel_flow', 1)
             
-        else:  # beta agent
-            # Beta agent: operates on slow material cycles  
-            material_stock = environment.get('beta_material', 3)
-            material_quality = environment.get('beta_quality', 2)
-            # Simpler sensor - less internal coupling
-            self.private_sensor = (material_stock * 3 + material_quality) % 8
+            # Realistic sensor combining energy state and flow rate
+            base_reading = energy_level + energy_flow * 0.5
+            sensor_noise = np.random.normal(0, 0.2)
+            raw_sensor = base_reading + sensor_noise
+            
+            # Store as float but will be discretized in get_state_dict()
+            self.private_sensor = max(0, min(8, raw_sensor))
+            
+        else:  # factory agent
+            # Factory: Production capacity sensor
+            material_stock = environment.get('factory_material', 3)
+            material_quality = environment.get('factory_quality', 2)
+            
+            # Realistic sensor for production capacity
+            capacity_indicator = material_stock * 0.6 + material_quality * 1.2
+            sensor_noise = np.random.normal(0, 0.15)
+            raw_sensor = capacity_indicator + sensor_noise
+            
+            # Store as float but will be discretized in get_state_dict()
+            self.private_sensor = max(0, min(8, raw_sensor))
     
     def decide_action(self):
-        """Simpler decision making with less internal coupling"""
-        memory_influence = sum(self.memory) % 3
-        sensor_influence = self.private_sensor % 3
+        """Realistic decision making with properly normalized influences"""
+        # Normalize both influences to [0,1] scale
+        memory_influence = np.mean(self.memory) / 8.0 if len(self.memory) > 0 else 0
+        sensor_influence = self.private_sensor / 8.0  # Already normalized
         
-        # Simpler logic with less interdependence
-        if self.agent_type == 'alpha':
-            random_factor = np.random.randint(0, 2)
-            decision_input = (sensor_influence + memory_influence + random_factor) % 6
-            # Alpha actions: 0=store, 1=process, 2=release
-            if decision_input < 2:
-                self.action = 0
-            elif decision_input < 4:
-                self.action = 1
+        # Add realistic noise and combine influences
+        noise = np.random.normal(0, 0.1)
+        demand_signal = sensor_influence + memory_influence * 0.3 + noise
+        
+        if self.agent_type == 'solar_panel':
+            # Solar Panel: Energy harvesting agent with different thresholds
+            # Actions: 0=sleep, 1=charge, 2=discharge
+            if demand_signal < 0.3:
+                self.action = 0  # sleep
+            elif demand_signal < 0.7:
+                self.action = 1  # charge
             else:
-                self.action = 2
+                self.action = 2  # discharge
                 
-        else:  # beta agent
-            random_factor = np.random.randint(0, 2)
-            decision_input = (sensor_influence + memory_influence + random_factor) % 6
-            # Beta actions: 0=maintain, 1=build, 2=repair
-            if decision_input < 2:
-                self.action = 0
-            elif decision_input < 4:
-                self.action = 1
+        else:  # factory agent
+            # Factory: Resource production agent with different thresholds
+            # Actions: 0=idle, 1=produce, 2=maintain
+            if demand_signal < 0.4:
+                self.action = 0  # idle/wait
+            elif demand_signal < 0.8:
+                self.action = 1  # produce resources
             else:
-                self.action = 2
+                self.action = 2  # maintain equipment
         
         return self.action
     
     def update_state(self):
-        """Simpler state updates with weaker coupling"""
-        # Update memory with sensor reading
+        """State updates with momentum and saturation using floats"""
+        # Update memory with recent sensor reading (convert to int for memory)
         self.memory[1:] = self.memory[:-1]
-        self.memory[0] = self.private_sensor
+        self.memory[0] = int(round(self.private_sensor))
         
-        # Simpler internal state updates
-        if self.agent_type == 'alpha':
-            # Alpha: simpler dynamics
-            self.internal_state = (self.internal_state + self.action + 1) % SimulationConfig.ALPHA_STATE_RANGE
+        # More realistic internal state updates with momentum
+        if self.agent_type == 'solar_panel':
+            # Solar Panel: Energy system internal state with momentum
+            state_change = (self.action - 1) * 0.3 + np.random.normal(0, 0.1)
+            self.internal_state = max(0, min(SimulationConfig.SOLAR_PANEL_STATE_RANGE, 
+                                           self.internal_state + state_change))
             
-            # Simpler goal progress
-            self.goal_progress = (self.goal_progress + self.action + 1) % SimulationConfig.ALPHA_GOAL_RANGE
+            # Goal progress with realistic advancement/decay
+            if self.action == 1:  # charging advances goal
+                progress_gain = min(0.5, self.private_sensor / 10.0)
+                self.goal_progress = min(SimulationConfig.SOLAR_PANEL_GOAL_RANGE, 
+                                       self.goal_progress + progress_gain)
+            else:
+                # Other actions cause slight goal decay
+                self.goal_progress = max(0, self.goal_progress - 0.1)
                 
-        else:  # beta agent
-            # Beta: simpler dynamics
-            self.internal_state = (self.internal_state + self.action + 2) % SimulationConfig.BETA_STATE_RANGE
+        else:  # factory agent
+            # Factory: Production system with wear-based state changes
+            wear_factor = max(0.1, self.action / 3.0)  # more action = more wear
+            state_change = self.action * 0.2 - wear_factor + np.random.normal(0, 0.05)
+            self.internal_state = max(0, min(SimulationConfig.FACTORY_STATE_RANGE, 
+                                           self.internal_state + state_change))
             
-            # Simpler goal progress
-            self.goal_progress = (self.goal_progress + self.action + 1) % SimulationConfig.BETA_GOAL_RANGE
+            # Goal progress based on production efficiency
+            if self.action == 1:  # producing advances goal
+                efficiency = max(0.1, self.internal_state / SimulationConfig.FACTORY_STATE_RANGE)
+                progress_gain = efficiency * 0.4
+                self.goal_progress = min(SimulationConfig.FACTORY_GOAL_RANGE, 
+                                       self.goal_progress + progress_gain)
+            elif self.action == 2:  # maintenance slightly advances goal
+                self.goal_progress = min(SimulationConfig.FACTORY_GOAL_RANGE, 
+                                       self.goal_progress + 0.1)
+            # Idle (action=0) causes no goal change
     
     def get_state_dict(self):
-        """Return agent state"""
+        """Return agent state with all values discretized to integers"""
         return {
-            f'{self.name}_sensor': self.private_sensor,
-            f'{self.name}_action': self.action,
-            f'{self.name}_internal': self.internal_state,
-            f'{self.name}_goal': self.goal_progress,
-            **{f'{self.name}_mem{i}': self.memory[i] for i in range(len(self.memory))}
+            f'{self.name}_sensor': int(round(self.private_sensor)),
+            f'{self.name}_action': int(self.action),
+            f'{self.name}_internal': int(round(self.internal_state)),
+            f'{self.name}_goal': int(round(self.goal_progress)),
+            **{f'{self.name}_mem{i}': int(self.memory[i]) for i in range(len(self.memory))}
         }
 
 
 class DecoupledEnvironment:
     """
-    Environment with completely separate domains for each agent.
+    Environment with separate energy and resource management domains.
     
-    This design ensures clean agent separation by having no shared variables
-    or cross-domain interactions.
+    Solar Panel domain: Energy system with collection/discharge dynamics
+    - solar_panel_energy: Available energy level (0 to SOLAR_PANEL_ENERGY_RANGE)
+    - solar_panel_flow: Energy flow capacity (0 to SOLAR_PANEL_FLOW_RANGE)
+    
+    Factory domain: Resource production system with maintenance
+    - factory_material: Raw material stock (0 to FACTORY_MATERIAL_RANGE)  
+    - factory_quality: Equipment condition (0 to FACTORY_QUALITY_RANGE)
+    
+    This design ensures clean agent separation with no shared variables.
     """
     
     def __init__(self):
-        # Completely separate domains - no shared variables
+        # Separate domains with no shared variables
         
-        # Alpha domain: fast energy dynamics
-        self.alpha_energy = 5
-        self.alpha_flow = 1
+        # Solar Panel domain: Energy collection system
+        self.solar_panel_energy = 5    # Current stored energy
+        self.solar_panel_flow = 1      # Energy flow/collection capacity
         
-        # Beta domain: slow material dynamics  
-        self.beta_material = 3
-        self.beta_quality = 2
+        # Factory domain: Resource production system  
+        self.factory_material = 3   # Raw material inventory
+        self.factory_quality = 2    # Equipment condition/efficiency
         
-        # No shared variables at all!
+        # Domains are completely independent!
         
     def update(self, agents):
-        """Update completely independent domains"""
-        alpha_agent = next((a for a in agents if a.agent_type == 'alpha'), None)
-        beta_agent = next((a for a in agents if a.agent_type == 'beta'), None)
+        """Update with realistic resource dynamics using float computations"""
+        solar_panel_agent = next((a for a in agents if a.agent_type == 'solar_panel'), None)
+        factory_agent = next((a for a in agents if a.agent_type == 'factory'), None)
         
-        # Alpha domain: fast energy cycles (updates every step)
-        if alpha_agent:
-            if alpha_agent.action == 1:  # process
-                self.alpha_energy = max(0, self.alpha_energy - 2)
-                self.alpha_flow = min(SimulationConfig.ALPHA_FLOW_RANGE, self.alpha_flow + 1)
-            elif alpha_agent.action == 2:  # release
-                self.alpha_energy = min(SimulationConfig.ALPHA_ENERGY_RANGE, self.alpha_energy + 1)
-                self.alpha_flow = max(0, self.alpha_flow - 1)
-            # Store action (0) keeps energy stable
+        # Solar Panel domain: Energy system with realistic dynamics
+        if solar_panel_agent:
+            if solar_panel_agent.action == 0:  # sleep
+                # Slow energy decay when sleeping
+                self.solar_panel_energy = max(0, self.solar_panel_energy - 0.1)
+                self.solar_panel_flow = self.solar_panel_flow * 0.95  # gradual flow reduction
+            elif solar_panel_agent.action == 1:  # charge
+                # Charge energy but reduce flow efficiency
+                energy_gain = min(2.0, self.solar_panel_flow * 1.5)
+                self.solar_panel_energy = min(SimulationConfig.SOLAR_PANEL_ENERGY_RANGE, 
+                                      self.solar_panel_energy + energy_gain)
+                self.solar_panel_flow = max(0, self.solar_panel_flow - 0.3)
+            elif solar_panel_agent.action == 2:  # discharge
+                # Discharge energy, restore flow capacity
+                self.solar_panel_energy = max(0, self.solar_panel_energy - 1.5)
+                flow_restoration = min(0.5, (SimulationConfig.SOLAR_PANEL_FLOW_RANGE - self.solar_panel_flow) * 0.4)
+                self.solar_panel_flow = min(SimulationConfig.SOLAR_PANEL_FLOW_RANGE, 
+                                    self.solar_panel_flow + flow_restoration)
         
-        # Natural alpha dynamics (independent of beta)
-        if np.random.random() < SimulationConfig.ALPHA_ENV_UPDATE_PROB:
-            self.alpha_energy = min(SimulationConfig.ALPHA_ENERGY_RANGE, 
-                                   self.alpha_energy + np.random.randint(0, 2))
-        if np.random.random() < SimulationConfig.ALPHA_FLOW_UPDATE_PROB:
-            self.alpha_flow = (self.alpha_flow + np.random.randint(-1, 2)) % SimulationConfig.ALPHA_FLOW_RANGE
+        # Natural solar panel dynamics with exponential trends
+        if np.random.random() < SimulationConfig.SOLAR_PANEL_ENV_UPDATE_PROB:
+            # Environmental energy input with saturation
+            energy_input = np.random.exponential(0.5)
+            self.solar_panel_energy = min(SimulationConfig.SOLAR_PANEL_ENERGY_RANGE, 
+                                   self.solar_panel_energy + energy_input)
         
-        # Beta domain: slow material cycles (updates less frequently)
-        if beta_agent and np.random.random() < SimulationConfig.BETA_ACTION_EFFECT_PROB:
-            if beta_agent.action == 1:  # build
-                self.beta_material = min(SimulationConfig.BETA_MATERIAL_RANGE, self.beta_material + 1)
-                self.beta_quality = max(0, self.beta_quality - 1)
-            elif beta_agent.action == 2:  # repair
-                self.beta_quality = min(SimulationConfig.BETA_QUALITY_RANGE, self.beta_quality + 2)
-            # Maintain action (0) keeps materials stable
+        # Factory domain: Resource production with wear and maintenance
+        if factory_agent and np.random.random() < SimulationConfig.FACTORY_ACTION_EFFECT_PROB:
+            if factory_agent.action == 0:  # idle
+                # Equipment slowly degrades when idle
+                self.factory_quality = max(0, self.factory_quality - 0.05)
+            elif factory_agent.action == 1:  # produce
+                # Production increases material but wears equipment
+                production_rate = max(0.1, self.factory_quality / SimulationConfig.FACTORY_QUALITY_RANGE)
+                self.factory_material = min(SimulationConfig.FACTORY_MATERIAL_RANGE, 
+                                       self.factory_material + production_rate)
+                self.factory_quality = max(0, self.factory_quality - 0.2)
+            elif factory_agent.action == 2:  # maintain
+                # Maintenance improves quality, may consume some material
+                maintenance_cost = min(0.1, self.factory_material * 0.05)
+                self.factory_material = max(0, self.factory_material - maintenance_cost)
+                quality_gain = min(1.0, maintenance_cost * 10 + 0.3)
+                self.factory_quality = min(SimulationConfig.FACTORY_QUALITY_RANGE, 
+                                      self.factory_quality + quality_gain)
         
-        # Natural beta dynamics (independent of alpha)
-        if np.random.random() < SimulationConfig.BETA_ENV_UPDATE_PROB:
-            self.beta_material = max(0, self.beta_material - 1)
-        if np.random.random() < SimulationConfig.BETA_QUALITY_UPDATE_PROB:
-            self.beta_quality = min(SimulationConfig.BETA_QUALITY_RANGE, 
-                                  self.beta_quality + np.random.randint(0, 2))
-            
+        # Natural factory dynamics with realistic decay
+        if np.random.random() < SimulationConfig.FACTORY_ENV_UPDATE_PROB:
+            # Material naturally depletes (consumption/spoilage)
+            depletion = np.random.exponential(0.3)
+            self.factory_material = max(0, self.factory_material - depletion)
+        
+        if np.random.random() < SimulationConfig.FACTORY_QUALITY_UPDATE_PROB:
+            # Quality has some natural restoration
+            restoration = np.random.gamma(2, 0.1)  # Small positive restoration
+            self.factory_quality = min(SimulationConfig.FACTORY_QUALITY_RANGE, 
+                                  self.factory_quality + restoration)
+        
     def get(self, key, default=0):
         """Get environment variable"""
         return getattr(self, key, default)
     
     def get_state_dict(self):
-        """Return completely separate environment states"""
+        """Return environment states with all values discretized to integers"""
         return {
-            'env_alpha_energy': self.alpha_energy,
-            'env_alpha_flow': self.alpha_flow,
-            'env_beta_material': self.beta_material,
-            'env_beta_quality': self.beta_quality
+            'env_solar_panel_energy': int(round(self.solar_panel_energy)),
+            'env_solar_panel_flow': int(round(self.solar_panel_flow)),
+            'env_factory_material': int(round(self.factory_material)),
+            'env_factory_quality': int(round(self.factory_quality))
         }
 
 
 def generate_decoupled_trace(steps=None):
     """
-    Generate trace from completely independent agents.
+    Generate trace from independent Solar Panel and Factory agents.
+    
+    Creates realistic simulation of:
+    - Solar Panel agent: Energy collection system with sleep/charge/discharge actions
+      • sleep (0): Low power mode with slow energy decay
+      • charge (1): Active energy collection with efficiency cost
+      • discharge (2): Energy release with capacity restoration
+      
+    - Factory agent: Resource production system with idle/produce/maintain actions
+      • idle (0): Equipment gradually degrades when unused
+      • produce (1): Manufacture goods but wear equipment
+      • maintain (2): Service equipment to improve quality
+    
+    Both agents operate in separate domains with realistic dynamics including:
+    - Sensor noise and saturation
+    - Threshold-based decision making  
+    - Exponential decay and momentum effects
+    - Resource constraints and trade-offs
     
     Args:
         steps: Number of simulation steps (default from config)
@@ -205,10 +289,10 @@ def generate_decoupled_trace(steps=None):
     if steps is None:
         steps = SimulationConfig.SIMULATION_STEPS
         
-    alpha_agent = IndependentAgent('A', 'alpha')
-    beta_agent = IndependentAgent('B', 'beta')
+    solar_panel_agent = IndependentAgent('A', 'solar_panel')
+    factory_agent = IndependentAgent('B', 'factory')
     
-    agents = [alpha_agent, beta_agent]
+    agents = [solar_panel_agent, factory_agent]
     environment = DecoupledEnvironment()
     
     trace = []

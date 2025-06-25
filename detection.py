@@ -22,9 +22,10 @@ def lagmax_mi(x, y, max_lag=None):
     Compute maximum mutual information over time lags.
     
     This captures temporal dependencies and memory effects between variables.
+    Works with discrete integer values.
     
     Args:
-        x, y: Time series arrays
+        x, y: Time series arrays (discrete integer values)
         max_lag: Maximum lag to consider (default from config)
         
     Returns:

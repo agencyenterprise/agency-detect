@@ -16,24 +16,24 @@ class SimulationConfig:
     # Agent design parameters
     MEMORY_SIZE = 3
     
-    # Alpha agent parameters
-    ALPHA_ENERGY_RANGE = 10
-    ALPHA_FLOW_RANGE = 6
-    ALPHA_STATE_RANGE = 8
-    ALPHA_GOAL_RANGE = 10
+    # Solar Panel agent parameters
+    SOLAR_PANEL_ENERGY_RANGE = 10
+    SOLAR_PANEL_FLOW_RANGE = 6
+    SOLAR_PANEL_STATE_RANGE = 8
+    SOLAR_PANEL_GOAL_RANGE = 10
     
-    # Beta agent parameters  
-    BETA_MATERIAL_RANGE = 8
-    BETA_QUALITY_RANGE = 6
-    BETA_STATE_RANGE = 6
-    BETA_GOAL_RANGE = 8
+    # Factory agent parameters  
+    FACTORY_MATERIAL_RANGE = 8
+    FACTORY_QUALITY_RANGE = 6
+    FACTORY_STATE_RANGE = 6
+    FACTORY_GOAL_RANGE = 8
     
     # Environment update probabilities
-    ALPHA_ENV_UPDATE_PROB = 0.4
-    ALPHA_FLOW_UPDATE_PROB = 0.3
-    BETA_ENV_UPDATE_PROB = 0.2
-    BETA_QUALITY_UPDATE_PROB = 0.25
-    BETA_ACTION_EFFECT_PROB = 0.7  # Probability beta actions affect environment
+    SOLAR_PANEL_ENV_UPDATE_PROB = 0.4
+    SOLAR_PANEL_FLOW_UPDATE_PROB = 0.3
+    FACTORY_ENV_UPDATE_PROB = 0.2
+    FACTORY_QUALITY_UPDATE_PROB = 0.25
+    FACTORY_ACTION_EFFECT_PROB = 0.7  # Probability factory actions affect environment
 
 
 class DetectionConfig:

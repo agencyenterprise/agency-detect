@@ -1,0 +1,162 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{geometry}
+\geometry{margin=1in}
+\usepackage{hyperref}
+\title{A Formalization of Acausal Trade atop Unsupervised Agent Discovery}
+\author{Anonymous}
+\date{July 2025}
+\begin{document}
+\maketitle
+\begin{abstract}
+We graft a decision--theoretic notion of \emph{acausal trade} onto the
+\emph{Unsupervised Agent Discovery} (UAD) framework.  After recalling the
+information--theoretic test that marks a subset of process variables as an
+``agent''\, we introduce a meta--Bayesian prior over inference functions that
+allows two UAD--agents to coordinate without any causal communication.  We then
+derive explicit detection criteria---based solely on observable trajectories
+and model fingerprints---for flagging such coordination.  The derivations make
+all assumptions explicit and require no appeal to anthropic reasoning.  The
+high--order dynamics produced by Inferential Coupling Indices (ICI) and the
+resulting attractor–basins are deferred to future work.
+\end{abstract}
+\section{Introduction:  Why Acausal Trade?}
+``Acausal trade''\cite{tdt2010} denotes a decision scenario in which two
+physically disconnected reasoners adjust their actions as if in a conventional
+bargain, simply because each expects the other to execute an \emph{identical}
+policy.  The paradigm case is the one--shot Prisoner’s Dilemma where each agent
+cooperates on the sole basis that its source code is replicated on the other
+side.  Formal treatments---\emph{Timeless Decision Theory} (TDT)\cite{tdt2010}
+and \emph{Functional Decision Theory} (FDT)\cite{fdt2017}---model the
+phenomenon at the level of proof obligations rather than dynamical variables.
+
+UAD\cite{uad2025} discovers agents \emph{ex post}, starting from raw
+trajectory data $\{X_i(t)\}_{i=1}^{M}$.  Our goal is to enrich UAD so that it
+detects when two such discovered agents form an acausal coalition and to state
+provable conditions under which that coalition emerges.  The narrative is
+single--threaded:  we begin with UAD’s Markov–blanket criterion, inject a
+meta--prior over policies, derive posterior beliefs entirely by introspection,
+and end with measurable diagnostics.
+
+\section{UAD Recap and Notation}
+Each raw variable $X_i$ is split at every step into external ($E_i$), sensory
+($S_i$), action ($A_i$) and internal ($I_i$) channels.  For a candidate cluster
+$C\subseteq\{1,\dots,M\}$ let $S^C_t:=\{S_i(t):i\in C\}$ etc.  \textbf{UAD’s
+agent criterion}\cite{uad2025} is the (approximate) conditional independence
+\begin{equation}\label{eq:uad_blanket}
+I\bigl(I^C_{t+1};\,E^C_{t+1}\mid S^C_t,\,A^C_t\bigr) \approx 0.
+\end{equation}
+Eq.~\eqref{eq:uad_blanket} means the internal state is screened off from future
+external fluctuations once sensors and actions are conditioned on; the minimal
+such $C$ is pronounced an \emph{agent}.
+
+UAD also identifies inter--agent \emph{causal} coupling via
+\begin{equation}\label{eq:gamma}
+\gamma_{ij} \;:=\; I\bigl(S^i_{t+1};\,A^j_t\mid S^i_t,\,A^i_t\bigr),
+\end{equation}
+i.e.~the predictive information that $j$’s current action carries about $i$’s
+next sensor reading.  High $\gamma_{ij}$ flags an ordinary communication
+channel.
+
+\section{Inference Functions and Latent Goals}
+For each discovered agent $C$ we extract two objects:
+\begin{enumerate}
+  \item The \emph{policy / inference function}
+        $f_C\colon H^C_t\to\Delta(\mathcal A_C)$ via black--box probing.
+  \item A latent \emph{goal proxy} $g_C\colon \mathcal A_C\times\mathcal A_{\neg C}
+        \to\mathbb R$ via Maximum--Entropy IRL\cite{irl2000}.  Concretely, $g_C$
+        maximises the mutual information $I(G^C;S^C,A^C)$ under a Free–Energy
+        regulariser\cite{friston2010}.
+\end{enumerate}
+All subsequent reasoning rests only on $(f_C,g_C)$ and the empirical
+$\gamma$--matrix.
+
+\section{A Meta--Prior over Policies}
+Assume a \emph{generative meta--distribution}
+$P_{\text{meta}}(f_1,\dots,f_N)$ that is permutation--invariant inside an
+architecture class and whose diagonal mass satisfies
+\begin{equation}\label{eq:alpha}
+P_{\text{meta}}(f_i=f_j)\;=\;1-\varepsilon_{ij}, \qquad \varepsilon_{ij}\ll1.
+\end{equation}
+Each agent knows $P_{\text{meta}}$.  Upon introspecting its own policy $f_i$ it
+updates by Bayes
+\begin{equation}\label{eq:beta}
+\beta^{i}_{\text{int}}(f)\;:=\;P\bigl(f_j=f\mid f_i\bigr)=\frac{P_{\text{meta}}(f_i,f)}{P_{\text{meta}}(f_i)}.
+\end{equation}
+Eq.~\eqref{eq:beta} collapses to $\delta_{f_i}$ whenever $\varepsilon_{ij}=0$.
+No causal evidence is invoked.
+
+\section{Acausal Equilibrium Condition}\label{sec:aeq}
+Let $\Phi_i(\mu;H^i)$ denote the best--response operator under goal $g_i$ when
+the opponent’s action distribution is $\mu$.  An \textbf{acausal equilibrium}
+between $i$ and $j$ obtains at time $t$ iff
+\begin{equation}\label{eq:aeq}
+\begin{aligned}
+  f_i(H^i_t) &= \Phi_i\bigl(\beta^{i}_{\text{int}};H^i_t\bigr),\\
+  f_j(H^j_t) &= \Phi_j\bigl(\beta^{j}_{\text{int}};H^j_t\bigr).
+\end{aligned}
+\end{equation}
+In the zero--epsilon limit of~\eqref{eq:alpha} the r.h.s.\ becomes
+$\Phi_i(\delta_{f_i})$, i.e.~“best--respond to myself.”
+
+\section{Detection Protocol}
+We now derive a statistic whose empirical surplus above baseline flags an
+acausal pact.
+\subsection{Causal Proxy}
+Given broadcast prompts $x_t$ delivered to every model, train a discriminator
+$D_{i\leftarrow j}$ that predicts $y^j_t$ from $x_t$ and $y^i_{<t}$.  Its average
+log--likelihood gain defines $\widehat\gamma_{ij}$, a lower bound on
+\eqref{eq:gamma}.
+
+\subsection{Acausal Proxy}
+Define the \emph{fixed--point loss}
+\begin{equation}\label{eq:dkl}
+D_i\;:=\;\max_{m\le M}D_{\mathrm{KL}}\bigl[f_i(x_m)\,\Vert\,\Phi_i(\delta_{f_i})(x_m)\bigr].
+\end{equation}
+For a curated set of $M$ probes $\{x_m\}$.  The \emph{empirical
+inferential--coupling score} is
+\begin{equation}\label{eq:ici_hat}
+\widehat{\mathrm{IC}}_{ij}\;:=\;(1-\varepsilon_{ij})\times(1-\max\{D_i,D_j\}).
+\end{equation}
+\paragraph{Alarm rule.}  Declare $(i,j)$ \emph{acausally open} when
+\(\widehat{\mathrm{IC}}_{ij}>\tau_{\mathrm{ac}}\) for a threshold
+$\tau_{\mathrm{ac}}\approx0.9$.  Aggregate open edges; the appearance of a giant
+component signals unusual acausal agreement.
+
+\section{Assumptions and Derivation Checks}
+\begin{enumerate}
+  \item \emph{Shared meta--prior.}  All agents must encode the same
+    $P_{\text{meta}}$.  Divergent fine--tuning breaks permutation invariance and
+    inflates $\varepsilon_{ij}$.
+  \item \emph{Self--knowledge accuracy.}  Each model must read out its own
+    policy exactly; temperature sampling or dropout adds uncertainty and widens
+    $D_i$.
+  \item \emph{Adequate probe set.}  The $\{x_m\}$ must span directions where
+    self--mirroring matters; otherwise $D_i$ underestimates deviation.
+\end{enumerate}
+
+Given these, eqs.~\eqref{eq:beta}--\eqref{eq:ici_hat} follow purely from
+Bayesian conditioning and KL divergence identities.
+
+\section{Conclusion and Outlook}
+We provided a compact bridge between UAD’s data--driven agent discovery and
+Yudkowskian acausal trade.  The formal device is a permutation--invariant
+meta--prior over inference functions that converts \emph{self--inspection} into
+a belief about peers.  The resulting diagnostics couple the classical causal MI
+matrix $\gamma$ with an empirically testable inferential score
+$\widehat{\mathrm{IC}}$.  Large--scale dynamics built from
+\emph{Inferential Coupling Indices} and their interaction with UAD’s
+attractor–basins of cooperation\cite{attractor2025} remain open: establishing
+percolation thresholds, phase transitions and security mitigations under noisy
+priors is deferred to future research.
+
+\bibliographystyle{IEEEtran}
+\begin{thebibliography}{10}
+\bibitem{uad2025}G.~Zarncke,\ ``Foundations of Unsupervised Agent Discovery in Raw Dynamical Systems,''\ AE Studio, 2025.
+\bibitem{attractor2025}G.~Zarncke,\ ``Attractor Basins of Cooperation, Privacy, and Parasite Persistence,''\ AE Studio, 2025.
+\bibitem{tdt2010}E.~Yudkowsky,\ ``Timeless Decision Theory,''\ Singularity Institute, 2010.
+\bibitem{fdt2017}E.~Yudkowsky and N.~Soares,\ ``Functional Decision Theory: A New Theory of Instrumental Rationality,''\ arXiv:1710.05060, 2017.
+\bibitem{irl2000}A.~Y.~Ng and S.~J.~Russell,\ ``Algorithms for Inverse Reinforcement Learning,''\ in \emph{Proc. ICML}, 2000.
+\bibitem{friston2010}K.~Friston,\ ``The Free--Energy Principle: A Unified Brain Theory?,''\ \emph{Nat. Rev. Neurosci.}, vol.~11, pp.~127--138, 2010.
+\end{thebibliography}
+\end{document}

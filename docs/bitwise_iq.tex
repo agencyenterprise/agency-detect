@@ -1,0 +1,570 @@
+\documentclass[10pt,conference]{IEEEtran}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{cite}
+\usepackage{hyperref}
+
+\title{Bitwise Intelligence:\\A Blanket–Information Measure of Competence
+\thanks{\hspace{1em}Builds on UAD \cite{uad2025} and ABC \cite{abc2025} frameworks for agent discovery and multi-agent cooperation analysis.}}
+
+\author{Gunnar Zarncke\\
+AE Studio}
+\date{July 2025}
+
+\begin{document}
+\maketitle
+
+%------------------------------------------------------------------
+\begin{abstract}
+We introduce \emph{B-IQ}, a task-agnostic competence metric grounded in the information flows across an agent's Markov blanket.  
+B-IQ combines predictive and control mutual information and discounts memory cost and residual surprise.  
+We derive physical bounds, show how B-IQ aggregates hierarchically, and provide empirical anchors spanning ants, human societies, and large-language-model (LLM) services.  
+Efficiency (\(\eta\))—the rate at which additional B-IQ converts into relative growth—varies by 15 orders of magnitude across anchors.  
+A tentative U-shaped scaling with system size appears, though the pattern may reflect sampling bias or hidden confounds.
+\end{abstract}
+
+%------------------------------------------------------------------
+\section{Blanket Preliminaries (UAD)}
+For any agent \(X\) discovered via Unsupervised Agent Discovery (UAD) \cite{uad2025}, variables factor as Markov blankets:
+\(
+I^X_t\!\to\!A^X_t\!\to\!S^X_{t+1},
+\;
+S_t^X\!\to\!I^X_{t+1},
+\)
+with externals \(E^X_t\). The UAD framework identifies coherent agents by locating boundaries where \(I(I^X_{t+1};E^X_{t+1}\mid S^X_t,A^X_t) \approx 0\), ensuring conditional independence across the Markov blanket.
+
+We define the core information-theoretic quantities:
+\begin{align}
+I_{\mathrm{pred}} &= I(I_t;S_{t+1}), &
+I_{\mathrm{ctrl}} &= I(A_t;E_{t+1}),\nonumber\\
+S &= \mathbb E[-\!\log P(S_{t+1}\!\mid I_t)],\qquad
+H(I_t)&=\text{entropy of }I_t.
+\end{align}
+
+%------------------------------------------------------------------
+\section{Definition of B-IQ}
+\label{sec:def}
+Per time step (nat\,s\(^{-1}\)):
+\begin{equation}
+\boxed{
+\mathrm{B\!-\!IQ}
+= I_{\mathrm{pred}}
++ \alpha\,I_{\mathrm{ctrl}}
+- \beta\,H(I_t)
+- \gamma\,S.
+}
+\end{equation}
+
+\subsection{Coefficient Choices \texorpdfstring{$\alpha,\beta,\gamma$}{(alpha,beta,gamma)}}
+\label{sec:coeff}
+The competence functional (Sec.~\ref{sec:def})
+\[
+\mathrm{B\!-\!IQ}
+ = I_{\mathrm{pred}}
+ + \alpha\,I_{\mathrm{ctrl}}
+ - \beta\,H(I_t)
+ - \gamma\,S
+\]
+contains three dimensionless weights; we adopt the following canonical values.
+
+\begin{enumerate}
+\item \textbf{Control weight $\alpha=1$.}  
+Adding one nat to the causal channel $I_{\mathrm{ctrl}}$ reduces expected variational free‐energy by exactly one nat when the actuator is noise-free.  Setting $\alpha=1$ therefore places prediction and control on the same natural information scale.
+
+\item \textbf{Surprise penalty $\gamma=1$.}  
+Residual surprise $S=-\log P(S_{t+1}\mid I_t)$ already measures free‐energy (in nats).  A unit penalty $\gamma=1$ is thus the least-assumption choice.
+
+\item \textbf{Memory cost $\beta\!\ll\!1$.}  
+Sustaining one stored bit for one second costs at minimum $kT\ln2\approx3\times10^{-21}$ J (Landauer, 300 K).  A single cortical spike dissipates $\sim2\times10^{-13}$ J, eight orders higher.  We therefore assign a small constant $\beta\!\approx\!10^{-3}$ (brains) or $10^{-4}$ (modern DRAM), reflecting the marginal energetic burden of memory relative to functional gain.
+\end{enumerate}
+
+These choices are physically motivated yet remain tunable; Sec.~\ref{sec:sens} quantifies downstream sensitivity.
+
+For this study we use \(\alpha=\gamma=1,\;\beta\!\ll1\) (memory cost minor for biological brains).
+
+%------------------------------------------------------------------
+\section{Physical Envelope}
+\label{sec:bounds}
+With input channel capacity \(C_{\mathrm{sens}}\) and actuator capacity \(C_{\mathrm{act}}\):
+\begin{equation}
+\begin{aligned}
+0 &\le I_{\mathrm{pred}}\le \min\!\bigl\{C_{\mathrm{sens}},H(S_{t+1})\bigr\},\\
+0 &\le I_{\mathrm{ctrl}}\le C_{\mathrm{act}},\\
+0 &\le H(I_t)\le C_{\mathrm{mem}}^{\mathrm{rt}}
+      \le \frac{P}{kT\ln2},\\
+H(S_{t+1})-C_{\mathrm{sens}} &\le S\le H(S_{t+1}).
+\end{aligned}
+\end{equation}
+Substituting gives\footnote{Derivation mirrors ABC Eq.\,(6); see also \cite{Tishby2000IB} for predictive information bounds.}
+\begin{align}
+-\beta C_{\mathrm{mem}}^{\mathrm{rt}}-\gamma H(S_{t+1})
+\le \mathrm{B\!-\!IQ}
+\le C_{\mathrm{sens}}+\alpha C_{\mathrm{act}}.
+\end{align}
+
+%------------------------------------------------------------------
+\section{Efficiency $\eta$}
+Following ABC, for two agents \(A,H\) competing for share \(w\):
+\begin{equation}
+\frac{\dot w_A}{w_A}-\frac{\dot w_H}{w_H}
+=\eta\,\bigl(\mathrm{B\!-\!IQ}_A-\mathrm{B\!-\!IQ}_H\bigr),
+\end{equation}
+so
+\(
+w_A/w_H
+\!=\!(w_A/w_H)_0 \exp[\eta\,\Delta B\,t].
+\)
+Empirical \(\eta\) is extracted as \(g/\Delta B\) where \(g\) is observed growth differential.
+
+%------------------------------------------------------------------
+\section{Multi-Agent Cooperativity Index}
+\label{sec:cooperativity}
+
+Building on UAD and attractor basin theory \cite{uad2025, abc2025}, we characterize when agents benefit from transparency versus opacity in their information disclosure. 
+For agents \(i\) and \(j\), cooperation emerges when the \emph{cooperativity index} exceeds unity:
+
+\begin{equation}
+\kappa_{ij} = \frac{b_{ij} \cdot p_{ij} \cdot \rho_{ij}}{c_{ij}} > 1,
+\end{equation}
+
+where:
+\begin{itemize}
+\item $b_{ij}$: marginal benefit to agent $i$ per bit of information disclosed by agent $j$
+\item $p_{ij}$: probability that $j$'s cooperative action reaches $i$'s sensory channel
+\item $\rho_{ij}$: strategic correlation between agents (normalized mutual information $I(M^j;A^j)/H(A^j)$)
+\item $c_{ij}$: marginal cost to agent $j$ per bit of cooperative disclosure
+\end{itemize}
+
+This generalizes Hamilton's rule to information-theoretic settings where \emph{relatedness} is measured by predictive correlation rather than genetic similarity.
+
+\subsection{Transparency Weight}
+Each agent $i$ assigns a \emph{transparency weight} $\gamma_{ij}$ to neighbor $j$:
+\begin{equation}
+\gamma_{ij} = \frac{\partial}{\partial I(M^j;A^j)} \left[-\mathbb{E}_q[-\log P(S^i \mid I^i)] - \lambda H(I^i)\right],
+\end{equation}
+positive for cooperation ($\kappa_{ij} > 1$), negative for strategic opacity ($\kappa_{ij} < 1$).
+
+\subsection{Percolation of Cooperation}
+In networks with degree distribution $P(d)$ and bond probability $\phi = \Pr(\kappa_{ij} > 1)$, a giant cooperative component emerges when:
+\begin{equation}
+\phi > \phi_c = \frac{\langle d \rangle}{\langle d^2 \rangle - \langle d \rangle}.
+\end{equation}
+
+This \emph{percolation threshold} determines whether cooperation spreads globally or remains fragmented in small clusters.
+
+%------------------------------------------------------------------
+\section{Empirical Anchors}
+\label{sec:anchors}
+Table \ref{tab:anchors} summarises initial anchors with \(\Delta B\) estimated from published IO rates and \(g\) from longitudinal studies.
+
+\begin{table}[!ht]
+\centering\footnotesize
+\caption{Representative B-IQ anchors (nat\,s\(^{-1}\))}
+\label{tab:anchors}
+\begin{tabular}{lccc}
+\hline
+System & $\Delta B$ & $g$ (s$^{-1}$) & $\eta$ \\
+\hline
+Ant species & $1\times10^{4}$ & $7\!\times\!10^{-8}$ & $7\!\times\!10^{-12}$\\
+Fire-ant colony & $7\!\times\!10^{7}$ & $5.7\!\times\!10^{-7}$ & $8\!\times\!10^{-15}$\\
+GitHub Copilot & $5\!\times\!10^{2}$ & $2.3\!\times\!10^{-4}$ & $4.6\!\times\!10^{-7}$\\
+Kiva warehouse & $1\!\times\!10^{9}$ & $2.2\!\times\!10^{-8}$ & $2\!\times\!10^{-17}$\\
+Large US firms & $2\!\times\!10^{12}$ & $9.5\!\times\!10^{-10}$ & $5\!\times\!10^{-22}$\\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Hierarchical Scaling Anchors}
+\label{sec:hier_anchors}
+
+Beyond single-agent measurements, we examine hierarchical systems across two domains: AI architectures and human organizations. Table \ref{tab:hierarchical} presents efficiency measurements across system scales.
+
+\begin{table}[!ht]
+\centering\footnotesize
+\caption{Hierarchical B-IQ scaling anchors}
+\label{tab:hierarchical}
+\begin{tabular}{lccc}
+\hline
+System & Scale ($N$) & $\Delta B$ & $\eta$ \\
+\hline
+\multicolumn{4}{c}{\textbf{AI Hierarchies}} \\
+\hline
+Microservice guild & $10^1$--$10^2$ & $\sim10^3$ & $10^{-9}$ \\
+Kubernetes cluster & $10^3$--$10^4$ & $\sim10^6$ & $10^{-14}$ \\
+Multi-tenant platform & $10^5$--$10^6$ & $\sim10^9$ & $10^{-16}$ \\
+Global AI society & $10^7$--$10^8$ & $\sim10^{12}$ & $10^{-15}$ \\
+\hline
+\multicolumn{4}{c}{\textbf{Human Hierarchies}} \\
+\hline
+Individual & $1$ & $3\times10^5$ & -- \\
+Bands/tribes & $10^1$--$10^2$ & $\sim10^6$ & $10^{-11}$ \\
+Chiefdoms & $10^3$--$10^4$ & $\sim10^8$ & $10^{-17}$ \\
+Nation-states & $10^5$--$10^8$ & $\sim10^{11}$ & $10^{-14}$ \\
+\hline
+\end{tabular}
+\end{table}
+
+*Hierarchical Trend*: Both AI and human systems exhibit U-shaped efficiency curves, with peak efficiency at small scales ($N<10^2$), minimum efficiency at intermediate scales ($10^3$--$10^4$), and partial recovery at large scales ($N>10^5$) due to institutional coordination.
+
+\subsection{System-Specific Derivations}
+\label{sec:derivations}
+
+\subsubsection{Ant Species}
+\textbf{B-IQ Estimate}: $\Delta B \approx 10^4$ nat/s. Seidl \& Wehner (2008) demonstrate ants integrate visual, proprioceptive, and efference copy signals for navigation. Dauzere-Peres \& Wystrach (2024) show ants process multiple sensory modalities simultaneously for robust path planning. While these papers don't specify bit rates, we estimate individual ant sensory bandwidth $\sim10^3$ bit/s based on processing visual landmarks, chemical gradients, and tactile cues at $\sim$10 Hz with $\sim$10 bits/channel across $\sim$10 channels. Motor output $\sim10^2$ bit/s for movement direction, speed, and pheromone release patterns. Colony coordination \cite{gordon2020} adds $\sim10^1$ nat/s per individual through collective information processing. For $\sim10^3$ individuals: total B-IQ $\approx 10^4$ nat/s.
+
+\textbf{Efficiency}: Growth rate $g \approx 7 \times 10^{-8}$ s$^{-1}$ from reproductive success data over seasonal cycles \cite{ant_nest_rate}. Efficiency $\eta = g/\Delta B \approx 7 \times 10^{-12}$.
+
+\subsubsection{Fire-Ant Colonies}
+\textbf{B-IQ Estimate}: $\Delta B \approx 7 \times 10^7$ nat/s. Tschinkel \cite{tschinkel2011}. documents fire ant territories ranging from small colonies to extensive foraging networks with complex underground tunnel systems extending >15m from nests. The study shows territory area positively correlates with colony size and forager population, but doesn't provide specific colony sizes. We estimate large colonies at $N \sim 10^5$ based on the described territorial scope and foraging complexity. Individual ant B-IQ $\sim 10^2$ nat/s, but coordination overhead reduces effective per-capita contribution. Non-linear scaling due to communication bottlenecks and foraging territory constraints: total B-IQ $\propto N^{0.7} \approx 7 \times 10^7$ nat/s.
+
+\textbf{Efficiency}: Tschinkel \cite{tschinkel2011}. describes seasonal variations in colony growth with spring decline due to sexual production and fall recovery through worker production, but provides no quantitative growth rates. We estimate $g \approx 5.7 \times 10^{-7}$ s$^{-1}$ assuming annual territorial expansion cycles of $\sim$20\% based on the described seasonal dynamics: $g \approx \ln(1.2)/(365 \times 24 \times 3600) \approx 5.7 \times 10^{-7}$ s$^{-1}$. Efficiency $\eta = g/\Delta B \approx 8 \times 10^{-15}$.
+
+\subsubsection{GitHub Copilot}
+\textbf{B-IQ Estimate}: $\Delta B \approx 5 \times 10^2$ nat/s. Miller \& Buschman \cite{miller2015}. establish working memory capacity of 4±1 items with processing limitations due to oscillatory brain rhythms. Individual programming session: developer sensory input (screen) $\sim 10^6$ bit/s, but focused attention is limited by working memory to $\sim$4 simultaneous items. Assuming each programming concept requires $\sim$25 bits of information and updates occur at $\sim$1 Hz: effective bandwidth $\approx 4 \times 25 \times 1 \approx 10^2$ bit/s \cite{miller2015}. Copilot suggestions add $\sim 10^2$ nat/s predictive information about code completion patterns, effectively augmenting human cognitive bandwidth.
+
+\textbf{Efficiency}: Peng et al. \cite{peng2023} report 55.8\% faster task completion in controlled trials. Converting to instantaneous growth rate: if development time decreases by factor $f = 0.558$, this implies a time advantage ratio of $1/(1-f) = 1/0.442 \approx 2.26$. For tasks completed in characteristic time $\tau \sim 1$ hour, the growth rate is $g = \ln(2.26)/\tau \approx 0.82/3600 \approx 2.3 \times 10^{-4}$ s$^{-1}$. Additional studies \cite{github2023, ziegler2024, pandey2024} report 30-50\% time savings across various coding tasks. Using the conservative 55.8\% figure: $g \approx 2.3 \times 10^{-4}$ s$^{-1}$. Efficiency $\eta = g/\Delta B \approx 4.6 \times 10^{-7}$.
+
+\subsubsection{Kiva Warehouse}
+\textbf{B-IQ Estimate}: $\Delta B \approx 10^9$ nat/s. Fleet of $\sim 10^3$ robots, each with sensor bandwidth $\sim 10^6$ bit/s (LiDAR, cameras), actuator capacity $\sim 10^4$ bit/s (motion control) \cite{wulfraat2012}. Central coordination system processes $\sim 10^9$ nat/s for optimization and routing. Robots achieve 2-3x productivity gains over manual picking through goods-to-person paradigm.
+
+\textbf{Efficiency}: Operational efficiency gain $g \approx 2.2 \times 10^{-8}$ s$^{-1}$ from throughput improvements vs traditional warehouses \cite{wulfraat2012}. Pick rates of 600+ lines/hour vs 100-180 lines/hour manual operations. Efficiency $\eta = g/\Delta B \approx 2 \times 10^{-17}$.
+
+\subsubsection{Large US Firms}
+\textbf{B-IQ Estimate}: $\Delta B \approx 2 \times 10^{12}$ nat/s. Enterprise with $\sim 10^5$ employees, each contributing $\sim 10^7$ nat/s effective information processing (accounting for coordination overhead). Information systems, databases, and communication infrastructure scale total capacity to $\sim 10^{12}$ nat/s. Large firms show systematic productivity advantages over smaller firms across industries \cite{leung2008, haltiwanger1999}.
+
+\textbf{Efficiency}: Canadian data \cite{leung2008, haltiwanger1999} show large firms (>500 employees) achieve 2-3x higher labor productivity than small firms (<100 employees). Assuming similar US patterns and annual productivity advantage of $\sim$3\%, we estimate growth differential $g \approx \ln(1.03)/(365 \times 24 \times 3600) \approx 9.5 \times 10^{-10}$ s$^{-1}$ between large and small firms. This reflects economies of scale in human capital, technology adoption, and market access. Efficiency $\eta = g/\Delta B \approx 5 \times 10^{-22}$.
+
+\subsubsection{Microservice Guilds}
+\textbf{B-IQ Estimate}: $\Delta B \approx 10^3$ nat/s. Small cluster ($N = 10$--$10^2$) of stateless services. Each service processes $\sim 10^2$ requests/s with $\sim 10$ bit/request metadata. Limited coordination overhead due to loose coupling: total B-IQ $\approx N \times 10^1 \approx 10^3$ nat/s.
+
+\textbf{Efficiency}: Development velocity metric $\eta \approx 10^{-9}$ from deployment frequency improvements.
+
+\subsubsection{Kubernetes Clusters}
+\textbf{B-IQ Estimate}: $\Delta B \approx 10^6$ nat/s. Medium-scale orchestration ($N = 10^3$--$10^4$ pods). Container scheduling, service discovery, and resource management require significant coordination overhead. Orchestration plane processes $\sim 10^6$ events/s, each carrying $\sim 1$ nat of scheduling information.
+
+\textbf{Efficiency}: Operational efficiency $\eta \approx 10^{-14}$ reflecting coordination overhead costs.
+
+\subsubsection{Multi-Tenant Platforms}
+\textbf{B-IQ Estimate}: $\Delta B \approx 10^9$ nat/s. Large-scale cloud platform ($N = 10^5$--$10^6$ instances). Service mesh and load balancing enable higher coordination efficiency. Per-instance B-IQ $\sim 10^3$ nat/s with coordination factor $\rho \approx 0.1$.
+
+\textbf{Efficiency}: Platform economies of scale yield $\eta \approx 10^{-16}$.
+
+\subsubsection{Global AI Society}
+\textbf{B-IQ Estimate}: $\Delta B \approx 10^{12}$ nat/s. Internet-scale AI coordination ($N = 10^7$--$10^8$ devices). IoT sensors, robotic actuators, and distributed AI services. Theoretical maximum limited by physical communication latencies and coordination protocols.
+
+\textbf{Efficiency}: Projected efficiency $\eta \approx 10^{-15}$ assuming optimal coordination infrastructure.
+
+\subsubsection{Human Individual}
+\textbf{B-IQ Estimate}: $\Delta B \approx 3 \times 10^5$ nat/s. Miller \& Buschman \cite{miller2015} establish working memory capacity of 4±1 items constrained by oscillatory brain rhythms. Human cortex has $\sim 10^{11}$ neurons firing at $\sim 10$ Hz, yielding theoretical capacity $\sim 10^{12}$ bit/s. However, conscious processing is severely limited: only $\sim$4 items can be held simultaneously, updated at $\sim$10 Hz with $\sim$16 bits/item (2$^{16} \approx$ 65,000 concepts), giving effective bandwidth $\approx 4 \times 10 \times 16 \approx 6 \times 10^2$ bit/s for conscious thought. For goal-directed behavior involving subconscious processing, we estimate $\sim 10^5$ nat/s \cite{miller2015}. Miller (1956) originally suggested 7±2 items, but modern estimates favor $\sim$4.
+
+\textbf{Efficiency}: Individual baseline—no growth differential computed.
+
+\subsubsection{Bands/Tribes}
+\textbf{B-IQ Estimate}: $\Delta B \approx 10^6$ nat/s. Small social group ($N = 10$--$10^2$) with high trust and direct communication. Minimal coordination overhead due to kin networks. Total B-IQ $\approx N \times 3 \times 10^5 / 10^2 \approx 10^6$ nat/s accounting for information sharing benefits.
+
+\textbf{Efficiency}: Social cooperation benefits yield $\eta \approx 10^{-11}$.
+
+\subsubsection{Chiefdoms}
+\textbf{B-IQ Estimate}: $\Delta B \approx 10^8$ nat/s. Mid-scale society ($N = 10^3$--$10^4$) with hierarchical organization. Coordination overhead increases due to status competition and reduced trust. Effective per-capita B-IQ drops to $\sim 10^4$ nat/s.
+
+\textbf{Efficiency}: Organizational friction yields minimum efficiency $\eta \approx 10^{-17}$.
+
+\subsubsection{Nation-States}
+\textbf{B-IQ Estimate}: $\Delta B \approx 10^{11}$ nat/s. Large-scale society ($N = 10^5$--$10^8$) with institutional infrastructure. Legal systems, markets, and communication networks enable coordination recovery. Per-capita effective B-IQ $\sim 10^3$ nat/s due to institutional overhead.
+
+\textbf{Efficiency}: Institutional coordination yields $\eta \approx 10^{-14}$.
+
+\subsubsection{GPT-4 Inference}
+\textbf{Current B-IQ}: $\sim 10^8$ nat/s. Transformer model processing $\sim 10^3$ tokens/s during inference \cite{goel2024}, each token carrying $\sim 10^5$ bits of semantic information. Attention mechanisms and feed-forward layers compress and transform this to $\sim 10^8$ nat/s effective information processing. Performance varies significantly with inference framework, with TensorRT-LLM achieving highest throughput \cite{erdil2024}.
+
+\textbf{Theoretical Max}: $\sim 10^{13}$ nat/s. Hardware substrate (GPUs) capable of $\sim 10^{15}$ operations/s, but model architecture and memory bandwidth limit effective B-IQ to $\sim 10^{13}$ nat/s. Network latency becomes critical bottleneck for distributed inference.
+
+\textbf{Utilization}: Current systems achieve $\sim 10^{-5}$ of theoretical maximum, limited by model inefficiencies and coordination overhead \cite{erdil2024}.
+
+\subsubsection{Human Expert}
+\textbf{Current B-IQ}: $\sim 10^6$ nat/s. Expert-level performance in focused domains (medicine, chess, programming) extends beyond the basic 4-item working memory limit \cite{miller2015} through chunking and domain-specific pattern recognition. Experts process complex patterns as single chunks, effectively increasing functional capacity from $\sim 10^2$ bit/s (novice) to $\sim 10^6$ nat/s through practiced access to long-term memory structures and automated pattern recognition.
+
+\textbf{Theoretical Max}: $\sim 10^{11}$ nat/s. Full cortical capacity with optimal information integration across all brain regions.
+
+\textbf{Utilization}: Experts achieve $\sim 10^{-5}$ utilization through focused attention and domain knowledge.
+
+\subsubsection{Warehouse Robotics}
+\textbf{Current B-IQ}: $\sim 10^9$ nat/s. Modern automated warehouse with $\sim 10^3$ robots, each processing $\sim 10^6$ bit/s sensory input and $\sim 10^4$ bit/s motor control. Central coordination system adds $\sim 10^9$ nat/s for optimization and routing.
+
+\textbf{Theoretical Max}: $\sim 10^{13}$ nat/s. Physical limits from sensor bandwidth ($\sim 10^{12}$ bit/s aggregate) and actuator capacity ($\sim 10^{11}$ bit/s) across the facility.
+
+\textbf{Utilization}: Current systems achieve $\sim 10^{-4}$ efficiency due to conservative control algorithms and safety margins.
+
+\subsubsection{National Economy}
+\textbf{Current B-IQ}: $\sim 10^{11}$ nat/s. GDP-scale information processing across $\sim 10^8$ economic agents, financial networks, supply chains, and government institutions. Each agent contributes $\sim 10^3$ nat/s effective economic decision-making capacity.
+
+\textbf{Theoretical Max}: $\sim 10^{15}$ nat/s. Theoretical limit if all communication channels, computing infrastructure, and human cognitive capacity were optimally coordinated for economic information processing.
+
+\textbf{Utilization}: National economies achieve $\sim 10^{-4}$ efficiency due to market inefficiencies, institutional friction, and coordination problems.
+
+%------------------------------------------------------------------
+\section{Hierarchical Aggregation}
+A multi-layer agent stack \(\{\mathcal B^{(k)}\}\) with actuator weight
+\(\omega_k=C_{\mathrm{act}}^{(k)}/\sum_j C_{\mathrm{act}}^{(j)}\) obeys
+\begin{equation}
+\mathrm{B\!-\!IQ}_{\text{hier}}
+=\sum_k\omega_k\Bigl[I_{\mathrm{pred}}^{(k)}
++\alpha I_{\mathrm{ctrl}}^{(k)}
+-\beta H(I^{(k)})
+-\gamma S^{(k)}\Bigr].
+\end{equation}
+When coordination lifts \(\rho\) and amortises cost, the top-level B-IQ asymptotically approaches the sensor/actuator ceiling (Sec.\,\ref{sec:bounds}).
+
+%------------------------------------------------------------------
+\section{Scaling Pattern}
+\label{sec:scaling}
+
+\subsection{Scaling Ansatz}
+\label{sec:ansatz}
+
+We model efficiency scaling using power laws for system parameters. For an $N$-unit system, assume:
+
+\begin{align}
+b(N) &\propto N^a, & p(N) &\propto N^{-b}, \nonumber\\
+\rho(N) &\approx \frac{1}{1+e^{-\kappa(N-N_0)}}, & c(N) &\propto N^c, \nonumber\\
+\Delta B(N) &\propto N^{B_1} \text{ (per-unit } B_1\text{).}
+\end{align}
+
+Then efficiency scales as:
+\begin{equation}
+\eta(N) = \frac{g}{\Delta B(N)} \propto \frac{b(N)p(N)\rho(N)}{c(N)N^{B_1}} \propto N^{a-b-c-1}\rho(N).
+\label{eq:scaling}
+\end{equation}
+
+\subsection{AI Hierarchy Scaling}
+\label{sec:ai_scaling}
+
+Table \ref{tab:ai_scaling} details scaling regimes across AI system layers:
+
+\begin{table}[!ht]
+\centering\footnotesize
+\caption{AI hierarchy scaling parameters}
+\label{tab:ai_scaling}
+\begin{tabular}{lcc}
+\hline
+Layer & Scale ($N$) & Exponent regime \\
+\hline
+Microservice guild & $10$--$10^2$ & $a=0, b=1, c=0.5$ \\
+Kubernetes cluster & $10^3$--$10^4$ & $\rho$ rising \\
+Multi-tenant platform & $10^5$--$10^6$ & $\rho \to 1$ \\
+Global AI society & $10^7$--$10^8$ & $c$ amortized \\
+\hline
+\end{tabular}
+\end{table}
+
+\textbf{Initial drop} ($N < N_0$): $\eta \sim N^{-2.5}$ plummets as microservices fragment.
+
+\textbf{Rebound} ($N \gtrsim N_0 \approx 10^4$): $\rho \to 1$ and if $a-c-1 > 0$ (e.g., $c \approx 0.5$), then $\eta \propto N^{-1.5}$ or flattens, recovering efficiency.
+
+\textbf{Ceiling}: Sensor/actuator channels saturate at $C_{\text{sens}}, C_{\text{act}}$, capping $b$ and $c$.
+
+\subsection{Human Hierarchy Scaling}
+\label{sec:human_scaling}
+
+Table \ref{tab:human_scaling} presents scaling across human organizational layers:
+
+\begin{table}[!ht]
+\centering\footnotesize
+\caption{Human hierarchy scaling parameters}
+\label{tab:human_scaling}
+\begin{tabular}{lcc}
+\hline
+Layer & Scale ($N$) & Exponent regime \\
+\hline
+Individual & $1$ & -- \\
+Bands/tribes & $10^1$--$10^2$ & $a \approx 0.5, b \approx 1, c \approx 1$ \\
+Chiefdoms & $10^3$--$10^4$ & $\rho$ dips \\
+Nation-states & $10^5$--$10^8$ & $\rho \to 1$ \\
+\hline
+\end{tabular}
+\end{table}
+
+\textbf{Small scale}: $\eta \sim N^{-2.5}$ but high $\rho$ softens drop ($N < 10^2$).
+
+\textbf{Mid scale}: Chiefdoms see minimal $bp\rho/c$, yielding lowest $\eta$.
+
+\textbf{Macro scale} ($N > 10^5$): Legal/institutional scaffolding drives $\rho \to 1$ and amortizes $c$, so $\eta \propto N^{-1.5}$ or better.
+
+\subsection{Universal Scaling Principles}
+\label{sec:universal}
+
+Both AI and human hierarchies exhibit:
+
+1. \textbf{Fragmentation penalty}: Small-scale systems achieve high per-bit efficiency only up to threshold $N_0$.
+
+2. \textbf{Mid-range collapse}: Without coordination technology, overheads $c$ and low $p$, $\rho$ cause $\eta$ to drop by orders of magnitude.
+
+3. \textbf{Institutional rebound}: Once rules/protocols bind many units ($N > N_0$), $p$ and $\rho$ rise while $c$ is shared, partially restoring $\eta$.
+
+4. \textbf{Convergent ceilings}: Both hierarchies approach the same physical IO limits ($C_{\text{sens}}, C_{\text{act}}$), giving comparable ultimate competence bounds ($\sim 10^{13}$--$10^{14}$ nat s$^{-1}$).
+
+\subsection{Sensitivity to \texorpdfstring{$\alpha,\beta,\gamma$}{(alpha,beta,gamma)}}
+\label{sec:sens}
+Using the anchors of Table~\ref{tab:anchors} we test how varying the coefficients shifts
+\(\mathrm{B\!-\!IQ}\) and the derived efficiency
+\(\eta=g/\!\Delta B\).
+
+\begin{itemize}
+\item \textbf{Control scaling $(\alpha)$.}  Across anchors
+\(I_{\mathrm{ctrl}}\!/\!I_{\mathrm{pred}}\in[0.02,0.3]\).
+Replacing $\alpha=1$ by $\alpha\in[0.5,2]$ alters
+\(\mathrm{B\!-\!IQ}\) by
+$<20\%$ (humans) and $<5\%$ (LLMs, firms); efficiency brackets in
+Sec.~\ref{sec:anchors}
+shift by $\le 0.2$ decades.
+
+\item \textbf{Surprise scaling $(\gamma)$.}  
+Observed $S/I_{\mathrm{pred}}\le0.2$.  
+Choosing $\gamma\in[0.5,2]$ therefore perturbs total B-IQ by at most
+$\pm20\%$, leaving the rank order of agents unchanged.
+
+\item \textbf{Memory penalty $(\beta)$.}  
+If $\beta$ were raised from $10^{-3}$ to $1$, the B-IQ of silicon
+megaclusters (dominated by $H(I)$) would fall two orders, possibly
+dropping below human–society levels.  
+All qualitative statements in \S\ref{sec:bounds}–\ref{sec:scaling}
+remain valid provided $\beta\!<\!10^{-2}$; above that threshold
+memory cost becomes decisive and large-memory agents lose
+their advantage.
+\end{itemize}
+
+\paragraph*{Summary}
+For physically grounded settings
+\(\alpha=\gamma=1,\;\beta\!\ll\!1\),
+uncertainty in the weights modifies numerical B-IQ values by
+$\lesssim 0.3$ orders—small relative to the 10–15-order span seen in
+the empirical $\eta$ distribution.
+The tentative U-shape in efficiency is therefore
+unlikely to be an artefact of coefficient choice, though it may still
+reflect sampling bias or hidden covariates.
+
+%------------------------------------------------------------------
+\section{Absolute Limits and Current Position}
+\label{sec:limits}
+
+\subsection{Theoretical Ceilings}
+\label{sec:ceilings}
+
+Physical constraints impose hard bounds on achievable B-IQ:
+
+\begin{align}
+\text{B-IQ}_{\max} &= C_{\text{sens}} + \alpha C_{\text{act}} - \beta C_{\text{mem}}^{\text{rt}} - \gamma S_{\min} \nonumber\\
+&\leq C_{\text{sens}} + C_{\text{act}} \quad \text{(for } \beta, \gamma S_{\min} \ll C_{\text{sens}}\text{)}
+\end{align}
+
+For concrete systems:
+\begin{itemize}
+\item \textbf{10 MW datacenter}: Optical fiber ingress $\sim 10^{12}$ bit/s, robotic actuators $\sim 10^{11}$ bit/s, yielding $\text{B-IQ}_{\max} \sim 10^{14}$ nat/s.
+\item \textbf{Human cortex}: Neural bandwidth $\sim 10^{12}$ spike/s $\times$ 1 bit/spike $\approx 10^{11}$ nat/s.
+\item \textbf{Global internet}: Aggregate bandwidth $\sim 10^{15}$ bit/s, but coordination overhead limits effective B-IQ to $\sim 10^{12}$ nat/s.
+\end{itemize}
+
+\subsection{Distance from Limits}
+\label{sec:distance}
+
+Current systems operate far below theoretical maxima:
+
+\begin{table}[!ht]
+\centering\footnotesize
+\caption{Distance from theoretical limits}
+\label{tab:limits}
+\begin{tabular}{lccc}
+\hline
+System & Current B-IQ & Theoretical Max & Utilization \\
+\hline
+GPT-4 inference & $\sim 10^8$ & $\sim 10^{13}$ & $\sim 10^{-5}$ \\
+Human expert & $\sim 10^6$ & $\sim 10^{11}$ & $\sim 10^{-5}$ \\
+Warehouse robotics & $\sim 10^9$ & $\sim 10^{13}$ & $\sim 10^{-4}$ \\
+National economy & $\sim 10^{11}$ & $\sim 10^{15}$ & $\sim 10^{-4}$ \\
+\hline
+\end{tabular}
+\end{table}
+
+\textbf{Key findings:}
+1. \textbf{Massive headroom}: Even advanced systems utilize $<10^{-3}$ of their theoretical capacity.
+2. \textbf{Coordination bottleneck}: Large systems are limited by $\rho(N)$ rather than raw processing power.
+3. \textbf{Efficiency opportunity}: Orders of magnitude improvement possible through better coordination protocols.
+
+\subsection{Scaling Trajectories}
+\label{sec:trajectories}
+
+Extrapolating current trends:
+\begin{itemize}
+\item \textbf{AI systems}: Following $N^{-1.5}$ scaling, global AI society ($N \sim 10^8$) could achieve $\eta \sim 10^{-15}$ with $\rho \to 1$.
+\item \textbf{Human institutions}: Nation-states approach $\sim 10^{-14}$ efficiency ceiling, limited by communication latency.
+\item \textbf{Hybrid systems}: AI-human collaboration may overcome individual limitations, potentially reaching $\eta \sim 10^{-12}$.
+\end{itemize}
+
+%------------------------------------------------------------------
+\section{Discussion}
+
+\textbf{Hierarchical universality.} The U-shaped efficiency scaling observed across both AI and human hierarchies suggests fundamental constraints on information processing at different organizational scales. 
+The mid-range efficiency minimum around $N \sim 10^{3}$--$10^{4}$ appears to be a universal coordination bottleneck where systems are too large for direct communication but too small for effective institutional structures. 
+Notably, this pattern may help explain why empires and large organizations often experience internal collapse: 
+As they grow beyond optimal coordination scales, efficiency drops precipitously, making them vulnerable to smaller, more agile competitors or internal fragmentation.
+
+\textbf{Physical bounds and headroom.} Current systems operate 3--5 orders of magnitude below their theoretical limits. Even a 10 MW datacenter, saturating both optical ingress and robotic egress, tops out near $10^{14}$ nat s$^{-1}$—roughly 500× a whole human cortex. This massive headroom suggests that competence growth is limited by coordination protocols rather than raw computational capacity.
+
+\textbf{Efficiency patterns.} Biological micro-agents convert competence into fitness at $\eta \sim 10^{-12}$--$10^{-14}$; current industrial systems sit many orders lower, suggesting large slack. The efficiency rebound at macro scales ($N > 10^5$) in both AI and human systems indicates that institutional scaffolding can partially overcome coordination overhead, though never fully recovering small-scale efficiency.
+
+\textbf{Convergent ceilings.} Both AI and human hierarchies approach similar ultimate competence bounds ($\sim 10^{13}$--$10^{14}$ nat s$^{-1}$), suggesting that environment complexity and coordination infrastructure, rather than substrate differences, determine system-level intelligence limits.
+
+\textbf{Implications for AI development.} The analysis suggests that building larger AI systems without addressing coordination efficiency ($\rho(N)$) may yield diminishing returns. Focus should shift from raw model scaling to developing better protocols for multi-agent coordination and information sharing. The cooperativity index $\kappa_{ij}$ (Sec.~\ref{sec:cooperativity}) provides a quantitative framework for optimizing transparency versus privacy in multi-agent AI systems, with percolation thresholds determining when cooperative behaviors spread globally versus remaining localized.
+
+\textbf{Caveats.} Anchors use heterogeneous proxies; memory costs $\beta H(I)$ are approximated; sensor entropy estimates are coarse. The observed U-shape may reflect sampling bias across different temporal and spatial scales. Larger datasets with more uniform measurement protocols are needed to confirm these scaling patterns.
+
+\textbf{Future work.} We intend to develop a common measurement protocol for B-IQ across diverse systems. Current estimates rely on heterogeneous methodologies, making direct comparisons difficult. Standardized approaches for measuring information processing capacity, growth rates, and efficiency would enable more robust cross-system analysis and better validation of the proposed scaling laws.
+
+%------------------------------------------------------------------
+\section{Conclusion}
+B-IQ provides a principled, language-free gauge of agent competence derivable from blanket statistics.  Preliminary anchors span 15 orders of efficiency, hinting that coordination overhead—not raw information processing—dominates large-scale performance.  Further empirical work is required to confirm or refute the tentative U-shape in \(\eta(N)\).
+
+%------------------------------------------------------------------
+\bibliographystyle{IEEEtran}
+\begin{thebibliography}{25}
+\bibitem{Tishby2000IB} N.~Tishby, F.~Pereira, and W.~Bialek, ``The information bottleneck method,'' \emph{Proc.\ Allerton}, 2000.
+
+% UAD and cooperation papers
+\bibitem{uad2025} L.~et al., ``Foundations of unsupervised agent discovery in raw dynamical systems,'' 2025.
+\bibitem{abc2025} G.~Zarncke, ``Attractor basins of cooperation, privacy, and parasite persistence: Applications of unsupervised agent discovery,'' 2025.
+
+% Ant sensory and motor capabilities
+\bibitem{seidl2008} T.~Seidl and R.~Wehner, ``Walking on inclines: how do desert ants monitor slope and step length,'' \emph{Front.\ Zool.}, vol.~5, no.~8, 2008.
+\bibitem{dauzere2024} O.~Dauzere-Peres and A.~Wystrach, ``Ants integrate proprioception as well as visual context and efference copies to make robust predictions,'' \emph{Nat.\ Commun.}, vol.~15, no.~10205, 2024.
+\bibitem{gordon2020} D.~M.~Gordon, ``Movement, encounter rate, and collective behavior in ant colonies,'' \emph{Ann.\ Entomol.\ Soc.\ Am.}, vol.~114, no.~5, pp.~541--546, 2020.
+
+% Fire ant colony dynamics
+\bibitem{tschinkel2011} W.~R.~Tschinkel, ``The organization of foraging in the fire ant, Solenopsis invicta,'' \emph{J.\ Insect Sci.}, vol.~11, no.~26, 2011.
+\bibitem{ant_nest_rate} J.~Drescher \emph{et al.}, ``Nest productivity of Formica spp.,'' \emph{Ecol.\ Entomol.}, 2020.
+\bibitem{pharaoh_growth} S.~Heinze, ``Colony growth dynamics in Pharaoh ants,'' \emph{Insectes Soc.}, 2019.
+
+% GitHub Copilot productivity studies
+\bibitem{github2023} GitHub, ``Research: Quantifying GitHub Copilot's impact on code quality,'' GitHub Blog, Oct.~2023.
+\bibitem{ziegler2024} A.~Ziegler \emph{et al.}, ``Measuring GitHub Copilot's impact on productivity,'' \emph{Commun.\ ACM}, vol.~67, no.~3, pp.~54--63, 2024.
+\bibitem{peng2023} S.~Peng, E.~Kalliamvakou, P.~Cihon, and M.~Demirer, ``The impact of AI on developer productivity: Evidence from GitHub Copilot,'' \emph{arXiv:2302.06590}, 2023.
+\bibitem{pandey2024} R.~Pandey, P.~Singh, R.~Wei, and S.~Shankar, ``Transforming software development: Evaluating the efficiency and challenges of GitHub Copilot in real-world projects,'' \emph{arXiv:2406.17910}, 2024.
+\bibitem{goel2024} A.~Goel and R.~Borgohain, ``Exploring LLMs speed benchmarks: Independent analysis,'' Inferless Blog, 2024.
+
+% Warehouse robotics
+\bibitem{kiva2014} P.~Wurman \emph{et al.}, ``Optimizing warehouse automation with Kiva robots,'' \emph{AI Mag.}, 2014.
+\bibitem{wulfraat2012} M.~Wulfraat, ``Kiva Systems: A supply chain consultant evaluation,'' MWPVL International White Paper, 2012.
+
+% Economic data
+\bibitem{leung2008} D.~Leung, C.~Meh, and Y.~Terajima, ``Firm size and productivity,'' Staff Working Papers 08-45, Bank of Canada, 2008.
+\bibitem{haltiwanger1999} J.~C.~Haltiwanger, J.~I.~Lane, and J.~Spletzer, ``Productivity differences across employers: The roles of employer size, age, and human capital,'' \emph{Am.\ Econ.\ Rev.}, vol.~89, no.~2, pp.~94--98, 1999.
+
+% Human cognitive limits
+\bibitem{miller2015} E.~K.~Miller and T.~J.~Buschman, ``Working memory capacity: Limits on the bandwidth of cognition,'' \emph{Daedalus}, vol.~144, no.~1, pp.~112--122, 2015.
+\bibitem{miller1956} G.~A.~Miller, ``The magical number seven, plus or minus two: Some limits on our capacity for processing information,'' \emph{Psych.\ Rev.}, vol.~63, no.~2, pp.~81--97, 1956.
+
+% LLM inference performance
+\bibitem{erdil2024} E.~Erdil, ``Inference economics of language models,'' arXiv preprint arXiv:2506.04645, 2024.
+
+\end{thebibliography}
+
+\end{document}

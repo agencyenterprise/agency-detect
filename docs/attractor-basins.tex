@@ -1,0 +1,127 @@
+\documentclass[10pt,conference]{IEEEtran}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{cite}
+\usepackage{hyperref}
+
+\title{Attractor Basins of Cooperation, Privacy, and Parasite Persistence:\\
+Applications of \emph{Foundations of Unsupervised Agent Discovery in Raw Dynamical Systems}\footnotemark}
+
+\author{Gunnar Zarncke\\
+AE Studio\\
+\small{Date: \today}}
+
+\begin{document}
+\maketitle
+\footnotetext{We build directly on the blanket– and information-theoretic framework of L.\ et al.\ (2025), hereafter “UAD.”}
+
+%------------------------------------------------------------------
+\begin{abstract}
+Extending Unsupervised Agent Discovery (UAD), we derive analytic conditions under which transparency (\(\gamma>0\)) percolates into global cooperation, under which strategic opacity (\(\gamma<0\)) preserves privacy, and under which high-entropy “parasites’’ evade host detection.  Key results: (i)~a configuration-model percolation threshold
+\(\phi_c=\langle d\rangle/(\langle d^2\rangle-\langle d\rangle)\) bounds the size of the cooperative attractor; (ii)~host capacity \(C_X^{\mathrm{crit}}=H(A^Y)-\lambda_YH(I^Y)/\beta\) sets parasite-persistence; (iii)~hierarchical links with \(\kappa_{iH}<1\) generate privacy islands despite dense peer cooperation in closed-form expressions. 
+\end{abstract}
+
+%------------------------------------------------------------------
+\section{Recap: Blanket Discovery and Transparency Weight}
+
+Given raw variables \(X_i(t)\), Unsupervised Agent Discovery  clusters a subset \(C\) when
+\[
+I(I^C_{t+1};E^C_{t+1}\mid S^C_t,A^C_t)\approx0,
+\]
+yielding sensory \(S\), active \(A\), internal \(I\), external \(E\).  
+Each agent \(i\) endows every neighbour \(j\) with a signed transparency weight
+\[
+\gamma_{ij}
+=\Bigl.\frac{\partial}{\partial I(M^j;A^j)}
+\!\bigl[-\mathbb E_q[-\log P(S^i\!\mid I^i)]-\lambda H(I^i)\bigr]\Bigr|_{I=I^*_{ij}},
+\]
+positive for cooperation, negative for opacity.
+
+%------------------------------------------------------------------
+\section{Pairwise Cooperativity Index}
+
+For ordered pair \((i,j)\) define
+\[
+\kappa_{ij}=\frac{b_{ij}\,p_{ij}\,\rho_{ij}}{c_{ij}},
+\]
+with \(b\)=benefit per bit shared, \(p\)=repeat-interaction probability, \(\rho\)=payoff correlation, \(c\)=marginal cost.  
+Edge \(j\!\to\! i\) is “open’’ if \(\kappa_{ij}>1\).  
+
+%------------------------------------------------------------------
+\section{Percolation Theorem: Global Attractor of Cooperation}
+
+Let \(G\) be a configuration model with degree distribution \(P(d)\) and bond-probability \(\phi=\Pr(\kappa_{ij}>1)\).  
+\emph{Theorem}.  A giant cooperative component of size \(\Theta(N)\) exists iff
+\[
+\phi>\phi_c=\frac{\langle d\rangle}{\langle d^2\rangle-\langle d\rangle}.
+\]
+If \(\phi\le\phi_c\) all cooperative clusters satisfy \(|C|\le O(\log N)\).  
+Consequently the “attractor basin of cooperation’’ contains a fraction
+\[
+S(\phi)=1-G_0\!\bigl(u(\phi)\bigr),
+\quad
+u=G_1\!\bigl(1-\phi+\phi\,u\bigr),
+\]
+with \(G_0,G_1\) the standard generating functions of \(P(d)\).
+
+%------------------------------------------------------------------
+\section{Parasite-Persistence Criterion}
+
+A hostile agent \(Y\) with action entropy \(H(A^Y)\) persists inside host \(X\) when
+\[
+C_X < H(A^Y)-\frac{\lambda_Y\,H(I^Y)}{\beta},
+\]
+where \(C_X\) bounds host modelling entropy and \(\beta\) rewards resource extraction.  
+Noise \(\eta\) lowers effective capacity to \(C_X-\eta\); adversarial camouflage raises the RHS, enlarging the persistence region.
+
+%------------------------------------------------------------------
+\section{Privacy Islands in Hierarchies}
+
+For individual \(i\) versus hierarchy \(H\) we typically have \(\kappa_{iH}<1\).  
+Optimal policy sets \(\gamma_{iH}<0\), driving \(I(M^H;S^i)\!\to\!0\).  
+If a fraction \(\psi\) of vertical edges satisfy \(\kappa_{iH}<1\), the network decomposes into:
+\begin{enumerate}
+\item a giant peer-cooperative component (if \(\phi>\phi_c\)),
+\item disjoint “privacy islands’’ disconnected from \(H\) by closed bonds.
+\end{enumerate}
+Regulatory or cryptographic measures reduce \(p_{iH}\) or raise \(c_{iH}\), expanding \(\psi\) and thus the privacy basin.
+
+%------------------------------------------------------------------
+\section{Mixed and Contextual Transparency}
+
+Each agent holds a context-dependent \(\gamma_{ij}(t)\).  
+Define state \(C_{ij}(t)\) tracking reciprocity; update rule
+\[
+\gamma_{ij}(t+1)=
+\begin{cases}
++\gamma_0,&\kappa_{ij}(t)\,{>}1,\\
+-\gamma_0,&\kappa_{ij}(t)\,{<}1.
+\end{cases}
+\]
+Dynamic bond-percolation analysis shows that if the time-average
+\(\bar\phi_{ij}=\Pr_t(\kappa_{ij}(t)>1)\) exceeds \(\phi_c\) the cooperative giant persists in expectation; otherwise cooperation fragments intermittently.
+
+%------------------------------------------------------------------
+\section{Discussion}
+
+The blanket-based disclosure cost rewrites classic Hamilton/Trivers intuitions in measurable bits:
+\emph{transparency} wins when \(\phi>\phi_c\); \emph{privacy} becomes rational when vertical \(\kappa<1\); \emph{parasites} survive whenever host capacity falls below an entropy threshold.  
+These results hold for directed, weighted, or hierarchically nested networks and clarify why higher-complexity organisms (larger \(C_X\)) enjoy lower parasite loads yet still value privacy against asymmetric principals.
+
+%------------------------------------------------------------------
+\section{Conclusion}
+
+By marrying UAD with percolation and capacity bounds, we give closed-form conditions for the size of cooperative, private, and parasitic attractors in any large dynamical system—biological, social, or artificial.
+
+\bibliographystyle{IEEEtran}
+\begin{thebibliography}{10}
+\bibitem{UAD} L.\ et al., “Foundations of Unsupervised Agent Discovery in Raw Dynamical Systems,” 2025.
+\bibitem{Kirchhoff2018} M.~Kirchhoff et al., “The Markov blankets of life,” \emph{J.\ R.\ Soc.\ Interface}, 15:138, 2018.
+\bibitem{Veerman2021} J.~Veerman and K.~Friston, “Markov blankets in the brain,” 2021.
+\bibitem{Rao1999} R.~P.~N. Rao and D.~H. Ballard, “Predictive coding in the visual cortex,” \emph{Nat.\ Neurosci.}, 2:79–87, 1999.
+\bibitem{Wang2012} Z.~Wang et al., “If players are sparse, social dilemmas are too,” \emph{Sci.\ Rep.}, 2:369, 2012.
+\bibitem{Yang2018} Y.~Yang et al., “Cooperation percolation in spatial evolutionary games,” \emph{EPL}, 124:48001, 2018.
+\bibitem{Bonneaud2022} C.~Bonneaud and B.~Longdon, “Coevolutionary theory of hosts and parasites,” \emph{Proc.\ R.\ Soc.\ B}, 289:20211987, 2022.
+\end{thebibliography}
+
+\end{document}

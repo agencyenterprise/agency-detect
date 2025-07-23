@@ -4,6 +4,17 @@
 \usepackage{cite}
 \usepackage{hyperref}
 
+% ==== Active‑Inference notation (shared across papers) ====
+\newcommand{\hstate}{\mathbf x}        % hidden state
+\newcommand{\obs}{\mathbf s}           % sensory observation
+\newcommand{\act}{\mathbf a}           % action / control
+\newcommand{\policy}{\pi}              % discrete policy (sequence of actions)
+\newcommand{\precision}{\gamma}        % precision (inverse variance)
+\newcommand{\FreeE}{\mathcal F}        % variational free energy
+\newcommand{\Sens}{\obs}
+\newcommand{\Act}{\act}
+\newcommand{\Int}{\hstate}
+
 \begin{document}
 
 \title{Foundations of Unsupervised Agent Discovery\\in Raw Dynamical Systems}
@@ -16,14 +27,23 @@ AE Studio\\
 
 \begin{abstract}
 We develop a principled framework for uncovering coherent ``agents'' within raw dynamical data streams without supervision. Building on the concept of Markov blankets, we show how to (1) locate agent boundaries via conditional independence tests, (2) extract memory substrates by lagged mutual information analysis, (3) infer latent objectives through information theoretic Lagrangians, and (4) characterize inter agent relationships via signed mutual information coupling. Our approach unifies active inference, inverse reinforcement, and information bottleneck principles into a single operational pipeline, and lends itself to both theoretical analysis and practical implementation. We demonstrate the framework with a Python prototype that successfully discovers 3 autonomous agent clusters from 64 variables across 50,000 timesteps in a controlled multi agent simulation.
-\end{abstract>
+\end{abstract}
 
 \section{Introduction}
 Complex adaptive systems—from biochemical networks to multi‐agent simulations—often conceal coherent actors with private states, memories, and goals.  Traditional supervised labeling is impractical at scale.  Here we propose an \emph{unsupervised} methodology for agent discovery directly from timestamped state‐variable traces $\{X_i(t)\}_{i=1}^N$.  We leverage \emph{Markov blankets} \cite{ConantAshby1970,Friston2010} as minimal interfaces that render internal and external dynamics conditionally independent:
 \begin{equation}
-I\bigl(I_{t+1};E_{t+1}\mid S_t,A_t\bigr)\;\approx\;0,
+I\bigl(\Int_{t+1};E_{t+1}\mid\Sens_t,\Act_t\bigr)\approx0
 \end{equation}
 where $S_t$ (sensory input), $A_t$ (action), $I_t$ (internal state), and $E_t$ (external variables) \cite{Kirchhoff2018} are defined below.
+
+\section{Related Literature on Agent Discovery}
+Literature in unsupervised object-centric discovery, such as MONet \cite{burgess2019monet}, IODINE \cite{greff2019iodine}, and Slot Attention \cite{locatello2020slot}, have demonstrated successful entity segmentation from visual data. 
+These methods typically optimize reconstruction losses rather than statistical independence criteria. 
+Our UAD framework adds a new new approaches by operationalizing Markov blankets \cite{kirchhoff2018markov,ramstead2022bayesian}, 
+thus providing a statistically rigorous and falsifiable criterion for agent boundary identification. 
+For comparison, alternative measures of agency, such as empowerment \cite{salge2014empowerment} and predictive information \cite{bialek2001predictability}, 
+quantify informational aspects of control without explicit segmentation and have not previously been shown to successfully separate agents in raw data.
+
 
 \section{Background: Markov Blankets and Active Inference}
 A \emph{Markov blanket} for a set of variables $C$ partitions observations into:
@@ -43,7 +63,8 @@ P\bigl(I^C_{t+1},E^C_{t+1} \mid I^C_t, S^C_t, A^C_t\bigr)
 
 ensures that once $S^C_t$ and $A^C_t$ are known, deeper $E^C_t$ adds no further predictive power.  
 
-Active‐inference casts behavior as minimization of a variational free‐energy \cite{Friston2010}::
+Active‐inference casts behavior as minimization of a variational free‐energy \cite{Friston2010}. Using Ramstead \textit{et al.}
+(2022) notation, the agent minimises $$\FreeE_t=\mathbb E_q[-\log p(\obs_t|\hstate_t)]+\mathrm{KL}\bigl[q(\hstate_t)\,\|\,p(\hstate_t|\hstate_{t-1},\act_{t-1})\bigr].$$
 \[
 \min_{\pi}\;\mathbb{E}\bigl[-\log P(S\mid I)\bigr]
 \;+\;\mathbb{E}\bigl[\mathrm{KL}\bigl(\pi(A\mid I)\;\|\;P(A\mid I)\bigr)\bigr],
@@ -222,30 +243,10 @@ The experimental results also highlight the framework's potential for real-world
 \section{Conclusion}
 Nested Markov blankets provide a first‐principles toolkit for revealing the structure of adaptive systems. The prototype implementation validates the theoretical framework, demonstrating successful unsupervised discovery of autonomous agents in complex dynamical systems. The system's ability to identify 3 distinct agent clusters from 64 variables across 50,000 timesteps, with all clusters passing rigorous Markov blanket validation, confirms the practical viability of the approach.
 
-The modular Python implementation provides a foundation for broader applications. Future work will apply these methods to neural data, cell microscopy, memory analysis, and evolutionary simulations. 
+The modular Python implementation provides a foundation for broader applications. Future work will apply these methods to neural data, cell microscopy, memory analysis, and evolutionary simulations.
 
 \bibliographystyle{IEEEtran}
 \bibliography{refs}
-
-\begin{thebibliography}{1}
-\bibitem{ConantAshby1970}
-R.~C. Conant and W.~R. Ashby, ``Every good regulator of a system must be a model of that system,'' \emph{Int. J. Systems Science}, vol.~1, no.~2, pp.89--97, 1970.
-
-\bibitem{Friston2010}
-K.~Friston, ``The free‐energy principle: a unified brain theory?'' \emph{Nat. Rev. Neurosci.}, vol.~11, no.~2, pp.127--138, 2010.
-
-\bibitem{Kirchhoff2018}
-M.~D. Kirchhoff, T.~Parr, E.~Palacios, K.~Friston, and J.~Kiverstein, ``The Markov blankets of life: autonomy, active inference and the free energy principle,'' \emph{J. R. Soc. Interface}, vol.~15, no.~138, 2018.
-
-\bibitem{NgRussell2000}
-A.~Y. Ng and S.~J. Russell, ``Algorithms for inverse reinforcement learning,'' in \emph{Proc. ICML}, 2000, pp.663--670.
-
-\bibitem{Ziebart2008}
-B.~D. Ziebart, A.~L. Maas, J.~A. Bagnell, and A.~K. Dey, ``Maximum entropy inverse reinforcement learning,'' in \emph{Proc. AAAI}, 2008, pp.1433--1438.
-
-\bibitem{Hamilton1964}
-W.~D. Hamilton, ``The genetical evolution of social behaviour,'' \emph{J. Theor. Biol.}, vol.~7, no.~1, pp.1--16, 1964.
-\end{thebibliography}
 
 
 \end{document}

@@ -12,6 +12,14 @@
 \usepackage{microtype}
 \geometry{margin=1in}
 
+% ==== Active‑Inference notation (shared across papers) ====
+\newcommand{\hstate}{\mathbf x}        % hidden state
+\newcommand{\obs}{\mathbf s}           % sensory observation
+\newcommand{\act}{\mathbf a}           % action / control
+\newcommand{\policy}{\pi}              % discrete policy (sequence of actions)
+\newcommand{\precision}{\gamma}        % precision (inverse variance)
+\newcommand{\FreeE}{\mathcal F}        % variational free energy
+
 \title{Stratification of Free--Energy--Minimising Loops in the Vertebrate Brain}
 \author{Gunnar Zarncke\\
 AE Studio}
@@ -96,12 +104,25 @@ mPFC = medial prefrontal cortex.}
 \label{tab:ledger}
 \end{table}
 
+\section{Canonical Lexicon}
+
+\begin{tabular}{lll}
+\textbf{Symbol} & \textbf{Meaning} & \textbf{Example loop} \\
+\hline
+$|pCO_2-pCO_2^{*}|$ & Chemoreflex mismatch & Brain‑stem breathing \\
+$|\phi_{\mathrm{SCN}}-\phi_{\text{light}}|$ & Circadian phase error & SCN synchrony \\
+$H(\text{threat})$ & Threat entropy & PAG defence \\
+$\Delta G_{\text{strain}}$ & Tissue strain FE & Immune repair \\
+$\beta\,\Delta I$ & Epistemic value & Curiosity loop \\
+\hline
+\end{tabular}
+
 \section{Free-Energy Terms: Biological Interpretations}
 
 Each loop in Tab.~\ref{tab:ledger} targets a distinct free-energy term, derived from the general variational form $F = \mathbb{E}_q[\ln q - \ln p]$. Here we provide the mathematical formulation of each term:
 
 \subsection{Respiratory Control}
-$F_{\text{CO}_2} = \mathbb{E}_q[\ln q(\text{pCO}_2) - \ln p(\text{pCO}_2|\text{setpoint})]$
+$\FreeE_{\text{resp}}=\tfrac12\precision\bigl(pCO_2^{\text{art}}-pCO_2^{*}\bigr)^2.$
 
 The respiratory system minimizes free energy over CO$_2$ partial pressure distributions, where $q$ represents the current belief about pCO$_2$ and $p$ the generative model based on homeostatic setpoints. This captures metabolic prediction error in chemoreceptor signaling.
 
@@ -216,57 +237,28 @@ The connection to the UAD framework transforms this descriptive taxonomy into an
 This represents a fundamental shift to measurable science in understanding the architecture of biological agency.
 Our goal is detection of loops in artificial agents for verification of compliant agent behavior and the design of compliant loops in artificial agents.
 
+\section{Enhanced Canonical Lexicon for Free-Energy Loops}
+We adopt the following canonical lexicon for specifying free-energy loops clearly and consistently across literature:
+
+\begin{tabular}{lll}
+\textbf{Symbol} & \textbf{Meaning} & \textbf{Biological Interpretation} \\
+\hline
+$|pCO_2 - pCO_2^*|$ & Chemoreflex mismatch & Metabolic prediction error \\
+$|\phi_{SCN} - \phi_{light}|$ & Circadian synchronization & Temporal prediction error \\
+$|o_{vis} - \hat{o}_{context}|$ & Metabolic homeostasis & Visual-contextual prediction mismatch \\
+$H(\text{threat})$ & Threat entropy & Uncertainty about danger states \\
+$\Delta G_{strain}$ & Morphological strain & Gibbs free energy of tissue damage \\
+$\sigma^2_t$ & Timing variance & Temporal uncertainty \\
+$-\log N_{desc}$ & Reproductive efficiency & Logarithmic reproductive utility \\
+$\mathbb{E}[c(a)]$ & Behavioral valuation & Expected cost minimization \\
+$\beta \Delta I$ & Epistemic curiosity & Information gain exploration \\
+$H(C_{ij})$ & Coalition entropy & Uncertainty in alliances \\
+\hline
+\end{tabular}
+
+This lexicon unifies existing active-inference formulations \cite{ramstead2022bayesian} and explicitly connects each free-energy loop with biological functions.
+
 \bibliographystyle{plain}
-\begin{thebibliography}{10}
-\bibitem{friston2010free} Friston K. The free-energy principle: a unified brain theory? Nature Reviews Neuroscience. 2010;11(2):127-138. doi: \url{https://doi.org/10.1038/nrn2787}
-
-\bibitem{guyenet2015co2} Guyenet PG, Bayliss DA. Neural control of breathing and CO$_{2}$ homeostasis. Nature Reviews Neuroscience. 2015;16(7):367-378. doi: \url{https://doi.org/10.1038/nrn3973}
-
-\bibitem{tan2016warm} Tan CL, Cooke EK, Leib DE, Lin YC, Daly GE, Zimmerman CA, Scott MM, Bjorkman KK, Reimann F, Gribble FM, Liberles SD, Dilorio P, Patapoutian A, Knight ZA. Warm-sensitive neurons that control body temperature. Nature. 2016;532(7600):586-590. doi: \url{https://doi.org/10.1038/nature17434}
-
-\bibitem{angelaki2022vestibular} Angelaki DE, Laurens J. The head direction cell network: attractor dynamics underlying integrative computation. eLife. 2022;11:e73266. doi: \url{https://doi.org/10.7554/eLife.73266}
-
-\bibitem{white2022saccade} White BJ, Kan JY, Levy R, Itti L, Munoz DP. Superior colliculus encodes visual saliency before the primary visual cortex. Proceedings of the National Academy of Sciences. 2022;119(12):e2121642119. doi: \url{https://doi.org/10.1073/pnas.2121642119}
-
-\bibitem{patton2023circadian} Patton AP, Hastings MH. The suprachiasmatic nucleus. Current Biology. 2023;33(15):R746-R750. doi: \url{https://doi.org/10.1016/j.cub.2023.06.029}
-
-\bibitem{karraza2024metabolic} Karraza-Samper N, Chen M, Rodriguez-Lopez A, et al. Metabolic coupling in the brain: neural-glial interactions in energy homeostasis. Nature Neuroscience. 2024;27(3):421-433. doi: \url{https://doi.org/10.1038/s41593-024-01589-3}
-
-\bibitem{zhang2023pag} Zhang H, Franceschini A, Cetin A, et al. The contribution of periaqueductal gray to pain and defensive behaviors. Nature Reviews Neuroscience. 2023;24(10):597-610. doi: \url{https://doi.org/10.1038/s41583-023-00729-w}
-
-\bibitem{iadecola2023vascular} Iadecola C, Duering M, Hachinski V, et al. Vascular cognitive impairment and dementia: JACC scientific statement. Journal of the American College of Cardiology. 2023;81(16):1617-1641. doi: \url{https://doi.org/10.1016/j.jacc.2023.02.026}
-
-\bibitem{freeman2023glial} Freeman MR, Rowitch DH. Evolving concepts of gliogenesis: a look way back and ahead to the next 25 years. Neuron. 2023;111(3):297-311. doi: \url{https://doi.org/10.1016/j.neuron.2023.01.003}
-
-\bibitem{koren2021immune} Koren T, Yifa R, Amer M, et al. Insular cortex neurons encode and retrieve specific immune responses. Cell. 2021;184(23):6103-6116. doi: \url{https://doi.org/10.1016/j.cell.2021.10.014}
-
-\bibitem{popa2018cerebellum} Popa LS, Ebner TJ. Cerebellum, predictions and errors. Frontiers in Cellular Neuroscience. 2018;12:524. doi: \url{https://doi.org/10.3389/fncel.2018.00524}
-
-\bibitem{clarke2022hpg} Clarke IJ, Smith JT. Hypothalamic control of reproduction by gonadotropin-releasing hormone: recent advances. Nature Reviews Endocrinology. 2022;18(9):573-589. doi: \url{https://doi.org/10.1038/s41574-022-00712-6}
-
-\bibitem{sarter2023attention} Sarter M, Lustig C, Blakely RD, Koshy Cherian A. Cholinergic genetics of visual attention: human and mouse choline transporter capacity variants and attention. Biological Psychiatry. 2023;93(4):331-339. doi: \url{https://doi.org/10.1016/j.biopsych.2022.09.013}
-
-\bibitem{gruber2022curiosity} Gruber MJ, Ritchey M, Wang SF, Doss MK, Ranganath C. Post-learning hippocampal dynamics promote preferential retention of rewarding events. Neuron. 2022;110(16):2635-2646. doi: \url{https://doi.org/10.1016/j.neuron.2022.05.017}
-
-\bibitem{scholz2023rtpj} Scholz J, Raschle NM, Hornberger M, et al. Right temporoparietal junction contributions to theory of mind in autism: a developmental perspective. Developmental Cognitive Neuroscience. 2023;61:101249. doi: \url{https://doi.org/10.1016/j.dcn.2023.101249}
-
-\bibitem{russell2019human} Russell S. Human Compatible: Artificial Intelligence and the Problem of Control. New York: Viking; 2019.
-
-\bibitem{ngo2022alignment} Ngo R, Chan L, Mindermann S. The alignment problem from a deep learning perspective. arXiv preprint arXiv:2209.00626. 2022. Available from: \url{https://arxiv.org/abs/2209.00626}
-
-\bibitem{critch2020ai} Critch A, Krueger D. AI Research Considerations for Human Existential Safety (ARCHES). arXiv preprint arXiv:2006.04948. 2020. Available from: \url{https://arxiv.org/abs/2006.04948}
-
-\bibitem{hubinger2019risks} Hubinger E, Dennison C, Ziegler M, et al. Risks from learned optimization in advanced machine learning systems. arXiv preprint arXiv:1906.01820. 2019. Available from: \url{https://arxiv.org/abs/1906.01820}
-
-\bibitem{friston2022designing} Friston K, Parr T, Zeidman P, et al. Designing ecosystems of intelligence from first principles. arXiv preprint arXiv:2212.01354. 2022. Available from: \url{https://arxiv.org/abs/2212.01354}
-
-\bibitem{sajid2021active} Sajid N, Ball PJ, Parr T, Friston KJ. Active inference: demystified and compared. Neural Computation. 2021;33(3):674-712. doi: \url{https://doi.org/10.1162/neco_a_01357}
-
-\bibitem{millidge2020deep} Millidge B, Tschantz A, Buckley CL. Deep active inference as variational policy gradients. Journal of Mathematical Psychology. 2020;96:102348. doi: \url{https://doi.org/10.1016/j.jmp.2020.102348}
-
-\bibitem{ramstead2022bayesian} Ramstead MJD, Sakthivadivel DAR, Heins C, et al. Bayesian mechanics of perceptual inference and motor control in the brain. Neural Networks. 2022;154:592-609. doi: \url{https://doi.org/10.1016/j.neunet.2022.07.024}
-
-\bibitem{miri2024problem} Machine Intelligence Research Institute. The Problem. Palo Alto, CA: MIRI; 2024. Available from: \url{https://intelligence.org/the-problem/}
-\end{thebibliography}
+\bibliography{refs}
 
 \end{document}

@@ -3,6 +3,15 @@
 \usepackage{geometry}
 \geometry{margin=1in}
 \usepackage{hyperref}
+
+% ==== Active‑Inference notation (shared across papers) ====
+\newcommand{\hstate}{\mathbf x}        % hidden state
+\newcommand{\obs}{\mathbf s}           % sensory observation
+\newcommand{\act}{\mathbf a}           % action / control
+\newcommand{\policy}{\pi}              % discrete policy (sequence of actions)
+\newcommand{\precision}{\gamma}        % precision (inverse variance)
+\newcommand{\FreeE}{\mathcal F}        % variational free energy
+
 \title{A Formalization of Acausal Trade atop Unsupervised Agent Discovery}
 \author{Anonymous}
 \date{July 2025}
@@ -64,24 +73,29 @@ For each discovered agent $C$ we extract two objects:
   \item The \emph{policy / inference function}
         $f_C\colon H^C_t\to\Delta(\mathcal A_C)$ via black--box probing.
   \item A latent \emph{goal proxy} $g_C\colon \mathcal A_C\times\mathcal A_{\neg C}
-        \to\mathbb R$ via Maximum--Entropy IRL\cite{irl2000}.  Concretely, $g_C$
+        \to\mathbb R$ via Maximum--Entropy IRL\cite{NgRussell2000}.  Concretely, $g_C$
         maximises the mutual information $I(G^C;S^C,A^C)$ under a Free–Energy
-        regulariser\cite{friston2010}.
+        regulariser\cite{Friston2010}.
 \end{enumerate}
 All subsequent reasoning rests only on $(f_C,g_C)$ and the empirical
 $\gamma$--matrix.
 
 \section{A Meta--Prior over Policies}
 Assume a \emph{generative meta--distribution}
-$P_{\text{meta}}(f_1,\dots,f_N)$ that is permutation--invariant inside an
+$p(\policy)$ that is permutation--invariant inside an
 architecture class and whose diagonal mass satisfies
 \begin{equation}\label{eq:alpha}
-P_{\text{meta}}(f_i=f_j)\;=\;1-\varepsilon_{ij}, \qquad \varepsilon_{ij}\ll1.
+p(\policy_i=\policy_j)\;=\;1-\varepsilon_{ij}, \qquad \varepsilon_{ij}\ll1.
 \end{equation}
-Each agent knows $P_{\text{meta}}$.  Upon introspecting its own policy $f_i$ it
+Each agent knows $p(\policy)$.  Upon introspecting its own policy $f_i$ it
 updates by Bayes
 \begin{equation}\label{eq:beta}
-\beta^{i}_{\text{int}}(f)\;:=\;P\bigl(f_j=f\mid f_i\bigr)=\frac{P_{\text{meta}}(f_i,f)}{P_{\text{meta}}(f_i)}.
+\beta^{i}_{\text{int}}(f)\;:=\;P\bigl(f_j=f\mid f_i\bigr)=\frac{p(\policy,f)}{p(\policy)}.
+\end{equation}
+
+Using Ramstead \textit{et al.} (2022) notation, the Bayesian conditioning equation is:
+\begin{equation}
+q_{\text{int}}^{i}(\policy)=\frac{p(\policy,\policy^{i})}{p(\policy^{i})}.
 \end{equation}
 Eq.~\eqref{eq:beta} collapses to $\delta_{f_i}$ whenever $\varepsilon_{ij}=0$.
 No causal evidence is invoked.
@@ -150,13 +164,9 @@ attractor–basins of cooperation\cite{attractor2025} remain open: establishing
 percolation thresholds, phase transitions and security mitigations under noisy
 priors is deferred to future research.
 
+\section{Connections to Decision-Theoretic Frameworks}
+Our formalization of acausal trade builds upon established decision-theoretic foundations, particularly Timeless Decision Theory (TDT) and Functional Decision Theory (FDT) \cite{yudkowsky2017functional}. Unlike Logical Decision Theory (LDT) \cite{critch2020ai, garrabrant2017logical}, our inferential coupling index empirically identifies acausal agreements directly from agent trajectories, offering a uniquely measurable approach. Contrasting our trajectory-based method with LDT's proof-theoretic nature highlights the practical detectability of our framework.
+
 \bibliographystyle{IEEEtran}
-\begin{thebibliography}{10}
-\bibitem{uad2025}G.~Zarncke,\ ``Foundations of Unsupervised Agent Discovery in Raw Dynamical Systems,''\ AE Studio, 2025.
-\bibitem{attractor2025}G.~Zarncke,\ ``Attractor Basins of Cooperation, Privacy, and Parasite Persistence,''\ AE Studio, 2025.
-\bibitem{tdt2010}E.~Yudkowsky,\ ``Timeless Decision Theory,''\ Singularity Institute, 2010.
-\bibitem{fdt2017}E.~Yudkowsky and N.~Soares,\ ``Functional Decision Theory: A New Theory of Instrumental Rationality,''\ arXiv:1710.05060, 2017.
-\bibitem{irl2000}A.~Y.~Ng and S.~J.~Russell,\ ``Algorithms for Inverse Reinforcement Learning,''\ in \emph{Proc. ICML}, 2000.
-\bibitem{friston2010}K.~Friston,\ ``The Free--Energy Principle: A Unified Brain Theory?,''\ \emph{Nat. Rev. Neurosci.}, vol.~11, pp.~127--138, 2010.
-\end{thebibliography}
+\bibliography{refs}
 \end{document}

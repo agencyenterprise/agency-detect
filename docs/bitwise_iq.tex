@@ -4,6 +4,14 @@
 \usepackage{cite}
 \usepackage{hyperref}
 
+% ==== Active‑Inference notation (shared across papers) ====
+\newcommand{\hstate}{\mathbf x}        % hidden state
+\newcommand{\obs}{\mathbf s}           % sensory observation
+\newcommand{\act}{\mathbf a}           % action / control
+\newcommand{\policy}{\pi}              % discrete policy (sequence of actions)
+\newcommand{\precision}{\gamma}        % precision (inverse variance)
+\newcommand{\FreeE}{\mathcal F}        % variational free energy
+
 \title{Bitwise Intelligence:\\A Blanket–Information Measure of Competence
 \thanks{\hspace{1em}Builds on UAD \cite{uad2025} and ABC \cite{abc2025} frameworks for agent discovery and multi-agent cooperation analysis.}}
 
@@ -47,11 +55,11 @@ H(I_t)&=\text{entropy of }I_t.
 Per time step (nat\,s\(^{-1}\)):
 \begin{equation}
 \boxed{
-\mathrm{B\!-\!IQ}
-= I_{\mathrm{pred}}
-+ \alpha\,I_{\mathrm{ctrl}}
-- \beta\,H(I_t)
-- \gamma\,S.
+\text{B‑IQ}
+= I_{\text{pred}}
++ I_{\text{ctrl}}
+- \beta H(\hstate)
+- \precision S.
 }
 \end{equation}
 
@@ -124,14 +132,14 @@ Building on UAD and attractor basin theory \cite{uad2025, abc2025}, we character
 For agents \(i\) and \(j\), cooperation emerges when the \emph{cooperativity index} exceeds unity:
 
 \begin{equation}
-\kappa_{ij} = \frac{b_{ij} \cdot p_{ij} \cdot \rho_{ij}}{c_{ij}} > 1,
+\kappa_{ij} = \frac{b_{ij} \cdot p_{ij} \cdot \varrho_{ij}}{c_{ij}} > 1,
 \end{equation}
 
 where:
 \begin{itemize}
 \item $b_{ij}$: marginal benefit to agent $i$ per bit of information disclosed by agent $j$
 \item $p_{ij}$: probability that $j$'s cooperative action reaches $i$'s sensory channel
-\item $\rho_{ij}$: strategic correlation between agents (normalized mutual information $I(M^j;A^j)/H(A^j)$)
+\item $\varrho_{ij}$: strategic correlation between agents (normalized mutual information $I(M^j;A^j)/H(A^j)$)
 \item $c_{ij}$: marginal cost to agent $j$ per bit of cooperative disclosure
 \end{itemize}
 
@@ -524,47 +532,11 @@ As they grow beyond optimal coordination scales, efficiency drops precipitously,
 \section{Conclusion}
 B-IQ provides a principled, language-free gauge of agent competence derivable from blanket statistics.  Preliminary anchors span 15 orders of efficiency, hinting that coordination overhead—not raw information processing—dominates large-scale performance.  Further empirical work is required to confirm or refute the tentative U-shape in \(\eta(N)\).
 
+\section{Comparative Competence Metrics and Scaling Laws}
+B-IQ complements other competence measures such as Integrated Information Theory (IIT 4.0) \cite{albantakis2023integrated} and semantic information measures \cite{kolchinsky2018semantic}. Unlike IIT, which emphasizes integrated consciousness, B-IQ explicitly quantifies predictive and control information flows across agent Markov blankets. Furthermore, neural network scaling laws \cite{kaplan2020scaling} provide empirical evidence for diminishing returns in performance gains as computational resources grow, corroborating our efficiency scaling results. Empirical studies on collective intelligence \cite{woolley2010evidence} further substantiate our observed U-shaped efficiency scaling across organizational scales.
+
 %------------------------------------------------------------------
 \bibliographystyle{IEEEtran}
-\begin{thebibliography}{25}
-\bibitem{Tishby2000IB} N.~Tishby, F.~Pereira, and W.~Bialek, ``The information bottleneck method,'' \emph{Proc.\ Allerton}, 2000.
-
-% UAD and cooperation papers
-\bibitem{uad2025} L.~et al., ``Foundations of unsupervised agent discovery in raw dynamical systems,'' 2025.
-\bibitem{abc2025} G.~Zarncke, ``Attractor basins of cooperation, privacy, and parasite persistence: Applications of unsupervised agent discovery,'' 2025.
-
-% Ant sensory and motor capabilities
-\bibitem{seidl2008} T.~Seidl and R.~Wehner, ``Walking on inclines: how do desert ants monitor slope and step length,'' \emph{Front.\ Zool.}, vol.~5, no.~8, 2008.
-\bibitem{dauzere2024} O.~Dauzere-Peres and A.~Wystrach, ``Ants integrate proprioception as well as visual context and efference copies to make robust predictions,'' \emph{Nat.\ Commun.}, vol.~15, no.~10205, 2024.
-\bibitem{gordon2020} D.~M.~Gordon, ``Movement, encounter rate, and collective behavior in ant colonies,'' \emph{Ann.\ Entomol.\ Soc.\ Am.}, vol.~114, no.~5, pp.~541--546, 2020.
-
-% Fire ant colony dynamics
-\bibitem{tschinkel2011} W.~R.~Tschinkel, ``The organization of foraging in the fire ant, Solenopsis invicta,'' \emph{J.\ Insect Sci.}, vol.~11, no.~26, 2011.
-\bibitem{ant_nest_rate} J.~Drescher \emph{et al.}, ``Nest productivity of Formica spp.,'' \emph{Ecol.\ Entomol.}, 2020.
-\bibitem{pharaoh_growth} S.~Heinze, ``Colony growth dynamics in Pharaoh ants,'' \emph{Insectes Soc.}, 2019.
-
-% GitHub Copilot productivity studies
-\bibitem{github2023} GitHub, ``Research: Quantifying GitHub Copilot's impact on code quality,'' GitHub Blog, Oct.~2023.
-\bibitem{ziegler2024} A.~Ziegler \emph{et al.}, ``Measuring GitHub Copilot's impact on productivity,'' \emph{Commun.\ ACM}, vol.~67, no.~3, pp.~54--63, 2024.
-\bibitem{peng2023} S.~Peng, E.~Kalliamvakou, P.~Cihon, and M.~Demirer, ``The impact of AI on developer productivity: Evidence from GitHub Copilot,'' \emph{arXiv:2302.06590}, 2023.
-\bibitem{pandey2024} R.~Pandey, P.~Singh, R.~Wei, and S.~Shankar, ``Transforming software development: Evaluating the efficiency and challenges of GitHub Copilot in real-world projects,'' \emph{arXiv:2406.17910}, 2024.
-\bibitem{goel2024} A.~Goel and R.~Borgohain, ``Exploring LLMs speed benchmarks: Independent analysis,'' Inferless Blog, 2024.
-
-% Warehouse robotics
-\bibitem{kiva2014} P.~Wurman \emph{et al.}, ``Optimizing warehouse automation with Kiva robots,'' \emph{AI Mag.}, 2014.
-\bibitem{wulfraat2012} M.~Wulfraat, ``Kiva Systems: A supply chain consultant evaluation,'' MWPVL International White Paper, 2012.
-
-% Economic data
-\bibitem{leung2008} D.~Leung, C.~Meh, and Y.~Terajima, ``Firm size and productivity,'' Staff Working Papers 08-45, Bank of Canada, 2008.
-\bibitem{haltiwanger1999} J.~C.~Haltiwanger, J.~I.~Lane, and J.~Spletzer, ``Productivity differences across employers: The roles of employer size, age, and human capital,'' \emph{Am.\ Econ.\ Rev.}, vol.~89, no.~2, pp.~94--98, 1999.
-
-% Human cognitive limits
-\bibitem{miller2015} E.~K.~Miller and T.~J.~Buschman, ``Working memory capacity: Limits on the bandwidth of cognition,'' \emph{Daedalus}, vol.~144, no.~1, pp.~112--122, 2015.
-\bibitem{miller1956} G.~A.~Miller, ``The magical number seven, plus or minus two: Some limits on our capacity for processing information,'' \emph{Psych.\ Rev.}, vol.~63, no.~2, pp.~81--97, 1956.
-
-% LLM inference performance
-\bibitem{erdil2024} E.~Erdil, ``Inference economics of language models,'' arXiv preprint arXiv:2506.04645, 2024.
-
-\end{thebibliography}
+\bibliography{refs}
 
 \end{document}

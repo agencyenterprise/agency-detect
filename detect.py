@@ -47,9 +47,18 @@ def main():
     # Set random seed for reproducible results
     np.random.seed(SimulationConfig.RANDOM_SEED)
     
-    # Generate simulation data
+    # Generate simulation data with specified configuration:
+    # - 3 solar panels
+    # - 1 wood factory
+    # - 1 steel factory 
+    # - 3 corn factories
     print("Generating simulation data...")
-    trace = generate_decoupled_trace()
+    
+    factory_materials = ['wood', 'steel', 'corn', 'corn', 'corn']
+    trace = generate_decoupled_trace(n_solar_panels=3, factory_materials=factory_materials)
+    
+    total_agents = 3 + len(factory_materials)  # 3 solar + 5 factories = 8 agents
+    print(f"Created {total_agents} agents total")
     
     # Analyze trace
     if not analyze_trace(trace):

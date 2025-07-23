@@ -10,11 +10,12 @@ class SimulationConfig:
     """Configuration for agent simulation parameters."""
     
     # Simulation parameters
-    SIMULATION_STEPS = 15000
+    SIMULATION_STEPS = 50000  # Increased for better statistical reliability
     RANDOM_SEED = 42
     
     # Agent design parameters
     MEMORY_SIZE = 3
+    N_AGENTS = 8  # Total agents - 3 solar + 5 factories (when using builder method)
     
     # Solar Panel agent parameters
     SOLAR_PANEL_ENERGY_RANGE = 10
@@ -31,18 +32,49 @@ class SimulationConfig:
     # Environment update probabilities
     SOLAR_PANEL_ENV_UPDATE_PROB = 0.4
     SOLAR_PANEL_FLOW_UPDATE_PROB = 0.3
-    FACTORY_ENV_UPDATE_PROB = 0.2
-    FACTORY_QUALITY_UPDATE_PROB = 0.25
-    FACTORY_ACTION_EFFECT_PROB = 0.7  # Probability factory actions affect environment
+    
+    # Material-specific factory parameters for more diversity
+    FACTORY_PARAMS = {
+        'wood': {
+            'env_update_prob': 0.4,        # Higher environmental change
+            'quality_update_prob': 0.1,    # Lower natural restoration  
+            'action_effect_prob': 0.9,     # Very high action effectiveness
+            'production_efficiency': 1.5,   # Much more efficient
+            'maintenance_cost_factor': 0.05 # Low maintenance cost
+        },
+        'steel': {
+            'env_update_prob': 0.05,       # Very low environmental change (stable)
+            'quality_update_prob': 0.5,    # Very high natural restoration
+            'action_effect_prob': 0.4,     # Low action effectiveness (sluggish)
+            'production_efficiency': 0.6,   # Much less efficient production
+            'maintenance_cost_factor': 0.18 # Very high maintenance cost
+        },
+        'corn': {
+            'env_update_prob': 0.35,       # High environmental change (volatile)
+            'quality_update_prob': 0.05,   # Very low natural restoration  
+            'action_effect_prob': 0.95,    # Very high action effectiveness (responsive)
+            'production_efficiency': 1.8,   # Much higher efficiency
+            'maintenance_cost_factor': 0.03 # Very low maintenance cost
+        }
+    }
+    
+    # Default factory parameters for unknown materials
+    DEFAULT_FACTORY_PARAMS = {
+        'env_update_prob': 0.2,
+        'quality_update_prob': 0.25,
+        'action_effect_prob': 0.7,
+        'production_efficiency': 1.0,
+        'maintenance_cost_factor': 0.08
+    }
 
 
 class DetectionConfig:
     """Configuration for agent detection algorithm."""
     
     # Clustering parameters
-    N_AGENTS = 3
+    N_AGENTS = 8  # Match number of simulated agents for individual clustering
     MAX_LAG = 3
-    WEAK_THRESHOLD = 0.2  # Lowered to keep action variables
+    WEAK_THRESHOLD = 0.05  # Very low to keep individual agent actions
     
     # Classification parameters
     ENV_MI_PERCENTILE = 50  # Percentile for environment MI threshold

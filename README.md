@@ -27,29 +27,95 @@ This means once you know the agent's sensors and actions, the internal and exter
 2. **Validates Autonomy**: Tests whether discovered clusters satisfy the Markov blanket property using conditional mutual information
 3. **Classifies Variables**: Automatically identifies which variables serve as sensors, actions, or internal states
 4. **Handles Temporal Dependencies**: Accounts for memory and lagged interactions between agents
+5. **Individual Agent Detection**: Can discover individual agents where each agent's sensor, action, and memory variables cluster together
+6. **Material-Specific Dynamics**: Supports different agent types with distinct behavioral patterns
 
-## Results
+## Simplest Example
 
-The framework successfully detects two independent agents:
+### Quick Start - Two Individual Agents
 
-**Agent A (Energy Domain)**:
-- Sensors: `A_sensor`, `env_alpha_flow` 
-- Actions: `A_action`
-- Internal: `A_mem0`, `A_mem1`, `A_mem2` (memory system)
+```bash
+python -c "
+from agents import generate_decoupled_trace
+from detection import AgentDetector
 
-**Agent B (Materials Domain)**:
-- Sensors: `B_sensor`, `env_beta_material`
-- Actions: `B_action` 
-- Internal: `B_internal`, `B_mem0`, `B_mem1`, `B_mem2`, `env_beta_quality`
+# Generate simple system: 1 solar panel + 1 steel factory
+trace = generate_decoupled_trace(n_solar_panels=1, factory_materials=['steel'])
 
-Each agent operates independently in its own domain while maintaining proper sensor-action-internal structure.
+# Detect individual agents
+detector = AgentDetector()
+results = detector.detect_agents(trace)
+detector.print_results(results)
+"
+```
+
+This minimal example creates **two completely independent agents**:
+
+**Solar Panel Agent**: Energy collection system
+- **Sensors**: Reads solar energy levels and flow capacity
+- **Actions**: 0=sleep, 1=charge, 2=discharge
+- **Memory**: Recent sensor readings and internal energy state
+
+**Steel Factory Agent**: Heavy industrial production system  
+- **Sensors**: Reads steel material stock and equipment quality
+- **Actions**: 0=cool, 1=smelt, 2=forge
+- **Memory**: Production history and equipment condition
+
+The framework automatically discovers that these are **separate autonomous agents** operating in **different domains** (energy vs. materials) with their own sensor-action-memory coupling.
+
+## Advanced Usage
+
+### Multiple Agents of Same Type
+
+```python
+from agents import generate_decoupled_trace
+from detection import AgentDetector
+
+# Create system with multiple similar agents
+trace = generate_decoupled_trace(
+    n_solar_panels=3,
+    factory_materials=['wood', 'steel', 'corn', 'corn', 'corn']
+)
+
+detector = AgentDetector()
+results = detector.detect_agents(trace)
+detector.print_results(results)
+```
+
+This demonstrates **functional agent discovery**: 
+- Multiple corn factories are detected as **one functional agent** (they work together)
+- Wood and steel factories are detected as **separate individual agents** (different dynamics)
+- Solar panels are detected as **one energy collective** (shared energy domain)
+
+### Material-Specific Behaviors
+
+Each factory type has distinct operational characteristics:
+
+- **Wood**: Forestry with seasonal growth cycles and environmental sensitivity
+- **Steel**: Heavy industry with temperature-based decisions and thermal cycling
+- **Corn**: Agriculture with seasonal patterns and moisture-dependent operations
+
+## Results Example
+
+For the simplest two-agent system, the framework typically discovers:
+
+**Agent 0: Solar Panel**
+- **Variables**: `Solar1_sensor`, `Solar1_action`, `Solar1_mem0`, `Solar1_mem1`, `Solar1_mem2`
+- **Structure**: Complete individual agent with tightly coupled sensor-action-memory
+
+**Agent 1: Steel Factory** 
+- **Variables**: `Steel1_sensor`, `Steel1_action`, `Steel1_mem0`, `Steel1_mem1`, `Steel1_mem2`
+- **Structure**: Complete individual agent with material-specific dynamics
 
 ## Applications
+
+Potential application include 
 
 - **Neural Data Analysis**: Discover functional modules in brain recordings
 - **Multi-Agent Systems**: Identify emergent agents in complex simulations
 - **Biological Systems**: Find autonomous subsystems in cellular or ecological data
 - **Robotics**: Detect modular controllers in complex robotic systems
+- **Industrial Systems**: Identify independent production units in manufacturing
 
 ## Theoretical Foundation
 
@@ -60,29 +126,29 @@ Based on the paper "Foundations of Unsupervised Agent Discovery in Raw Dynamical
 
 ## Getting Started
 
-### Quick Start
+### Complete Demo
 
 ```bash
 python detect.py
 ```
 
-This will:
-1. Generate a simulation with two independent agents
-2. Analyze the time series data for agent boundaries
-3. Classify variables as sensors, actions, or internal states
-4. Display the discovered agent structures
+This runs the full demonstration with multiple agents and displays:
+1. Simulation data generation with realistic agent dynamics
+2. Variable variance analysis and clustering process
+3. Individual agent detection with sensor-action-memory grouping
+4. Classification results showing discovered agent boundaries
 
 ### Modular Architecture
 
 The codebase is organized into clean, modular components:
 
-- **`config.py`**: Configuration parameters
-- **`agents.py`**: Agent simulation classes  
-- **`markov_blanket.py`**: Markov blanket validation
-- **`detection.py`**: Core detection algorithm
-- **`detect.py`**: Main demonstration
+- **`config.py`**: Simulation and detection configuration parameters
+- **`agents.py`**: Multi-agent simulation with material-specific behaviors
+- **`markov_blanket.py`**: Markov blanket validation using conditional mutual information
+- **`detection.py`**: Core clustering algorithm with individual agent detection
+- **`detect.py`**: Main demonstration and entry point
 
-### Using Individual Components
+### Custom Configurations
 
 ```python
 from agents import generate_decoupled_trace
@@ -90,20 +156,21 @@ from detection import AgentDetector
 from config import SimulationConfig, DetectionConfig
 
 # Configure simulation
-sim_config = SimulationConfig()
-sim_config.SIMULATION_STEPS = 5000
-sim_config.RANDOM_SEED = 123
+SimulationConfig.SIMULATION_STEPS = 20000  # More data for better statistics
+SimulationConfig.RANDOM_SEED = 42
 
-# Configure detection  
-det_config = DetectionConfig()
-det_config.WEAK_THRESHOLD = 0.3
-det_config.VALIDATE_BLANKETS = True
+# Configure detection for individual agents
+DetectionConfig.N_AGENTS = 8  # Match expected number of individual agents
+DetectionConfig.WEAK_THRESHOLD = 0.05  # Very low to keep individual actions
 
-# Generate data
-trace = generate_decoupled_trace(steps=sim_config.SIMULATION_STEPS)
+# Generate data with specific composition
+trace = generate_decoupled_trace(
+    n_solar_panels=2, 
+    factory_materials=['wood', 'steel']
+)
 
 # Run detection
-detector = AgentDetector(det_config)
+detector = AgentDetector()
 results = detector.detect_agents(trace)
 detector.print_results(results)
 ```

@@ -1,0 +1,2 @@
+run = "python detect.py"       # or whatever your entrypoint is
+language = "python"          # optional, Replit usually infers from files

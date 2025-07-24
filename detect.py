@@ -2,7 +2,7 @@
 """
 Main entry point for unsupervised agent discovery.
 
-This refactored version demonstrates clean separation of concerns:
+Separation of concerns:
 - Agent simulation (agents.py)
 - Markov blanket validation (markov_blanket.py)  
 - Detection algorithm (detection.py)

@@ -2,6 +2,9 @@
 
 This project implements a principled framework for discovering autonomous agents within raw dynamical systems without supervision, based on the theoretical foundations of **Markov blankets** and **active inference**.
 
+To try it out, use [https://docs.google.com/document/d/1e4Xx-Ez0iuN5fhrYjcV9fjS26HiEx1e4RlEAPVBlCaA/edit?tab=t.0](this 1 minute quickstart with screenshots) (browser only required).
+
+
 ## Overview
 
 Complex systems—from neural networks to multi-agent simulations—often contain hidden autonomous actors with their own sensors, actions, and internal states. Traditional approaches require manual labeling or domain knowledge. This framework automatically discovers these agents by detecting **Markov blanket structures** in time series data.

@@ -10,9 +10,12 @@ Separation of concerns:
 """
 
 import numpy as np
-from config import SimulationConfig, DetectionConfig
-from agents import generate_decoupled_trace
-from detection import AgentDetector
+from agency_detect import (
+    SimulationConfig, 
+    DetectionConfig,
+    generate_decoupled_trace,
+    AgentDetector
+)
 
 
 def analyze_trace(trace):
